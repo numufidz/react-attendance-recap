@@ -785,7 +785,7 @@ const AttendanceRecapSystem = () => {
     let yPos = 50;
 
     // Header
-    const headerHeight = 70; // TURUNKAN dari 90 → 70 agar tidak terlalu tinggi
+    const headerHeight = 80;
     doc.setFillColor(79, 70, 229);
     doc.rect(0, 0, pageWidth, headerHeight, 'F');
     doc.setTextColor(255, 255, 255);
@@ -796,61 +796,94 @@ const AttendanceRecapSystem = () => {
     // Judul utama
     doc.setFontSize(24);
     doc.setFont(undefined, 'bold');
-    doc.text('KESIMPULAN PROFIL ABSENSI', 40, centerY - 12);
+    doc.text('KESIMPULAN PROFIL ABSENSI', 40, centerY - 8);
 
     // Subjudul
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
-    doc.text('MTs. AN-NUR BULULAWANG', 40, centerY + 6);
+    doc.text('MTs. AN-NUR BULULAWANG', 40, centerY + 10);
 
     // Periode
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
-    doc.text(`Periode: ${summaryData.periode}`, 40, centerY + 22);
+    doc.text(`Periode: ${summaryData.periode}`, 40, centerY + 26);
 
-    // yPos setelah header — DIPERKETAT
-    yPos = headerHeight + 15;
-
+    // yPos setelah header
+    yPos = headerHeight + 20;
     doc.setTextColor(0, 0, 0);
 
-    // Predikat Besar
+    // 1 BARIS 3 KONTAINER: Predikat, Total Karyawan, Total Hari Kerja
+    const containerWidth = (pageWidth - 120) / 3;
+    const containerHeight = 80;
+
+    // Container 1: Predikat
     doc.setFillColor(240, 240, 255);
-    doc.roundedRect(40, yPos, pageWidth - 80, 80, 5, 5, 'F');
-    yPos += 25;
-    doc.setFontSize(28);
+    doc.roundedRect(40, yPos, containerWidth, containerHeight, 5, 5, 'F');
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.text('Predikat', 60, yPos + 25);
+    doc.setFontSize(20);
     doc.setFont(undefined, 'bold');
-    doc.text(summaryData.predikat, 60, yPos);
-    yPos += 35;
+    doc.text(summaryData.predikat, 60, yPos + 50);
+
+    // Container 2: Total Karyawan
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(
+      40 + containerWidth + 20,
+      yPos,
+      containerWidth,
+      containerHeight,
+      5,
+      5,
+      'F'
+    );
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.text('Total Guru & Karyawan', 60 + containerWidth + 20, yPos + 25);
     doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text(
+      `${summaryData.totalKaryawan} orang`,
+      60 + containerWidth + 20,
+      yPos + 50
+    );
+
+    // Container 3: Total Hari Kerja
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(
+      40 + (containerWidth + 20) * 2,
+      yPos,
+      containerWidth,
+      containerHeight,
+      5,
+      5,
+      'F'
+    );
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.text('Total Hari Kerja', 60 + (containerWidth + 20) * 2, yPos + 25);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text(
+      `${summaryData.totalHariKerja} hari`,
+      60 + (containerWidth + 20) * 2,
+      yPos + 50
+    );
+
+    yPos += containerHeight + 20;
+
+    // Tingkat Kehadiran (tambahan info)
+    doc.setFillColor(220, 220, 240);
+    doc.roundedRect(40, yPos, pageWidth - 80, 30, 5, 5, 'F');
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
     doc.text(
       `Tingkat Kehadiran: ${summaryData.persentaseKehadiran}%`,
       60,
-      yPos
+      yPos + 20
     );
-    yPos += 50;
 
-    // Total Karyawan dan Hari Kerja (2 kolom, simetris)
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.setFillColor(230, 230, 240);
-    const boxWidth = (pageWidth - 100) / 2;
-    doc.roundedRect(40, yPos, boxWidth, 50, 5, 5, 'F');
-    doc.roundedRect(40 + boxWidth + 20, yPos, boxWidth, 50, 5, 5, 'F');
-    doc.text('Total Guru & Karyawan', 60, yPos + 20);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(16);
-    doc.text(`${summaryData.totalKaryawan} orang`, 60, yPos + 40);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text('Total Hari Kerja', 60 + boxWidth + 20, yPos + 20);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(16);
-    doc.text(
-      `${summaryData.totalHariKerja} hari`,
-      60 + boxWidth + 20,
-      yPos + 40
-    );
-    yPos += 70;
+    yPos += 50;
 
     // Rincian Kehadiran Header
     doc.setFontSize(14);
@@ -858,57 +891,66 @@ const AttendanceRecapSystem = () => {
     doc.setFillColor(220, 220, 240);
     doc.roundedRect(40, yPos, pageWidth - 80, 30, 5, 5, 'F');
     doc.text('Rincian Kehadiran:', 60, yPos + 20);
+
     yPos += 40;
 
     const details = [
       {
         label: 'Hadir Total',
         value: `${summaryData.totalHadir} (${summaryData.persentaseKehadiran}%)`,
-        color: [200, 230, 255], // Light Blue
+        color: [200, 230, 255],
       },
       {
         label: 'Tepat Waktu',
         value: `${summaryData.totalTepat} (${summaryData.persentaseTepat}%)`,
-        color: [200, 255, 200], // Light Green
+        color: [200, 255, 200],
       },
       {
         label: 'Terlambat',
         value: `${summaryData.totalTelat} (${summaryData.persentaseTelat}%)`,
-        color: [255, 255, 200], // Light Yellow
+        color: [255, 255, 200],
       },
       {
         label: 'Alfa',
         value: `${summaryData.totalAlfa} (${summaryData.persentaseAlfa}%)`,
-        color: [255, 200, 200], // Light Red
+        color: [255, 200, 200],
       },
     ];
 
+    // 4 box dengan ukuran sama dan simetris
     const detailBoxWidth = (pageWidth - 120) / 4;
+    const detailBoxHeight = 60;
+
     details.forEach((detail, idx) => {
       const xPos = 40 + idx * (detailBoxWidth + 10);
       doc.setFillColor(...detail.color);
-      doc.roundedRect(xPos, yPos, detailBoxWidth, 50, 5, 5, 'F');
-      doc.setFontSize(10);
+      doc.roundedRect(xPos, yPos, detailBoxWidth, detailBoxHeight, 5, 5, 'F');
+
+      doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
-      doc.text(detail.label, xPos + 10, yPos + 20);
-      doc.setFontSize(13);
+      doc.text(detail.label, xPos + 15, yPos + 25);
+
+      doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text(detail.value, xPos + 10, yPos + 40);
+      doc.text(detail.value, xPos + 15, yPos + 45);
     });
 
-    yPos += 70;
+    yPos += detailBoxHeight + 20;
 
-    // ============= DESKRIPSI KESIMPULAN =============
-    doc.setFillColor(250, 250, 250);
-    doc.roundedRect(40, yPos, pageWidth - 80, 220, 5, 5, 'F');
+    // ============= DESKRIPSI KESIMPULAN DENGAN CONTAINER =============
+    doc.setFillColor(245, 245, 250);
+    doc.setDrawColor(200, 200, 220);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(40, yPos, pageWidth - 80, 200, 5, 5, 'FD');
 
     yPos += 20;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(79, 70, 229);
     doc.text('Deskripsi Kesimpulan Profil Absensi', 60, yPos);
 
     yPos += 20;
+    doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
 
@@ -1047,21 +1089,19 @@ const AttendanceRecapSystem = () => {
       yPos = 40;
 
       // Header Peringkat
-
       doc.setFillColor(79, 70, 229);
       doc.rect(0, 0, pageWidth, 60, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
       doc.setFont(undefined, 'bold');
       doc.text('PERINGKAT GURU & KARYAWAN', 40, 25);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.text('MTs. AN-NUR BULULAWANG', 40, 45);
 
-      // Periode
-      doc.setFontSize(12);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.text(`Periode: ${summaryData.periode}`, 40, centerY + 22);
+      doc.text(`Periode: ${summaryData.periode}`, 40, 55);
 
       yPos = 80;
 
@@ -1553,7 +1593,7 @@ const AttendanceRecapSystem = () => {
 
     doc.setFontSize(14);
     doc.setFont(undefined, 'normal');
-    doc.text(`Predikat: ${summaryData.predikat}`, 40, yPos + 25);
+    doc.text(`MTs. An-Nur Bululawang`, 40, yPos + 25);
 
     yPos = 120;
     doc.setTextColor(0, 0, 0);
@@ -1648,8 +1688,9 @@ const AttendanceRecapSystem = () => {
       },
     ];
 
-    const boxWidth = (pageWidth - 120) / 2;
-    const boxHeight = 50;
+    // Gunakan ukuran yang sama dengan box Total Karyawan & Total Hari Kerja
+    const boxWidth = (pageWidth - 100) / 2;
+    const boxHeight = 60;
     let col = 0;
     let row = 0;
 
@@ -1662,11 +1703,11 @@ const AttendanceRecapSystem = () => {
 
       doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
-      doc.text(detail.label, xPos + 15, yBoxPos + 20);
+      doc.text(detail.label, xPos + 15, yBoxPos + 25);
 
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text(detail.value, xPos + 15, yBoxPos + 40);
+      doc.text(detail.value, xPos + 15, yBoxPos + 45);
 
       col++;
       if (col >= 2) {
@@ -1675,18 +1716,22 @@ const AttendanceRecapSystem = () => {
       }
     });
 
-    yPos += 120;
+    yPos += 140;
 
-    // Deskripsi Kesimpulan Profil Absensi
-    doc.setFillColor(250, 250, 250);
-    doc.roundedRect(40, yPos, pageWidth - 80, 180, 5, 5, 'F');
+    // Deskripsi Kesimpulan Profil Absensi dengan Container
+    doc.setFillColor(245, 245, 250);
+    doc.setDrawColor(200, 200, 220);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(40, yPos, pageWidth - 80, 240, 5, 5, 'FD');
 
     yPos += 20;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
+    doc.setTextColor(79, 70, 229);
     doc.text('Deskripsi Kesimpulan Profil Absensi', 60, yPos);
 
     yPos += 20;
+    doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
 
@@ -1869,20 +1914,26 @@ const AttendanceRecapSystem = () => {
         body: table1Data,
         startY: yPos,
         theme: 'grid',
-        headStyles: { fillColor: [34, 197, 94], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: {
+          fillColor: [34, 197, 94],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 30 },
-          1: { halign: 'center', cellWidth: 40 },
-          4: { halign: 'center', cellWidth: 40 },
-          5: { halign: 'center', cellWidth: 50 },
+          0: { halign: 'center', cellWidth: 25 },
+          1: { halign: 'center', cellWidth: 35 },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 'auto' },
+          4: { halign: 'center', cellWidth: 35 },
+          5: { halign: 'center', cellWidth: 40 },
         },
       });
 
-      yPos = doc.lastAutoTable.finalY + 20;
+      yPos = doc.lastAutoTable.finalY + 15;
 
       // Cek halaman baru sebelum tabel 2
-      if (yPos > 700) {
+      if (yPos > 680) {
         doc.addPage();
         yPos = 40;
       }
@@ -1917,20 +1968,26 @@ const AttendanceRecapSystem = () => {
         body: table2Data,
         startY: yPos,
         theme: 'grid',
-        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 30 },
-          1: { halign: 'center', cellWidth: 40 },
-          4: { halign: 'center', cellWidth: 40 },
-          5: { halign: 'center', cellWidth: 50 },
+          0: { halign: 'center', cellWidth: 25 },
+          1: { halign: 'center', cellWidth: 35 },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 'auto' },
+          4: { halign: 'center', cellWidth: 35 },
+          5: { halign: 'center', cellWidth: 40 },
         },
       });
 
-      yPos = doc.lastAutoTable.finalY + 20;
+      yPos = doc.lastAutoTable.finalY + 15;
 
       // Cek halaman baru sebelum tabel 3
-      if (yPos > 700) {
+      if (yPos > 680) {
         doc.addPage();
         yPos = 40;
       }
@@ -1965,13 +2022,19 @@ const AttendanceRecapSystem = () => {
         body: table3Data,
         startY: yPos,
         theme: 'grid',
-        headStyles: { fillColor: [239, 68, 68], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: {
+          fillColor: [239, 68, 68],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 30 },
-          1: { halign: 'center', cellWidth: 40 },
-          4: { halign: 'center', cellWidth: 40 },
-          5: { halign: 'center', cellWidth: 50 },
+          0: { halign: 'center', cellWidth: 25 },
+          1: { halign: 'center', cellWidth: 35 },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 'auto' },
+          4: { halign: 'center', cellWidth: 35 },
+          5: { halign: 'center', cellWidth: 40 },
         },
       });
     }
