@@ -3370,298 +3370,364 @@ const AttendanceRecapSystem = () => {
                   </table>
                 </div>
               </div>
-              <div
-                ref={panduanRef}
-                className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl"
-              >
-                <h4 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-                  📊 Panduan Lengkap 3 Tabel Rekap
-                </h4>
 
-                <div className="mb-6 bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
-                  <h5 className="font-bold text-lg text-blue-700 mb-3">
-                    1️⃣ Rekap Mesin (Data Mentah)
-                  </h5>
-                  <p className="text-gray-700 mb-4">
-                    Data langsung dari mesin fingerprint tanpa proses evaluasi
-                  </p>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 p-3 bg-blue-100 rounded-lg">
-                        <div className="w-16 h-12 bg-blue-300 rounded flex items-center justify-center text-xs font-bold">
-                          07:15
-                          <br />
-                          16:30
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-blue-800">
-                            Biru
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Scan masuk DAN pulang (lengkap)
-                          </p>
-                        </div>
-                      </div>
+<div className="max-w-6xl mx-auto p-6 bg-gray-50">
+      <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        📊 Panduan Lengkap 3 Tabel Rekap
+      </h4>
 
-                      <div className="flex items-center gap-3 p-3 bg-yellow-100 rounded-lg">
-                        <div className="w-16 h-12 bg-yellow-300 rounded flex items-center justify-center text-xs font-bold">
-                          07:15
-                          <br />-
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-yellow-800">
-                            Kuning
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Hanya scan masuk atau pulang saja
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+      {/* TABEL 1: Rekap Mesin */}
+      <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+        <h5 className="font-bold text-xl text-blue-700 mb-3">
+          1️⃣ Rekap Mesin (Data Mentah)
+        </h5>
+        <p className="text-gray-700 mb-5">
+          Data langsung dari mesin fingerprint tanpa proses evaluasi
+        </p>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 p-3 bg-red-100 rounded-lg">
-                        <div className="w-16 h-12 bg-red-300 rounded flex items-center justify-center text-xs font-bold">
-                          -<br />-
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-red-800">
-                            Merah
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Tidak scan sama sekali (Alpha)
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                        <div className="w-16 h-12 bg-white border-2 border-gray-400 rounded flex items-center justify-center text-lg font-bold">
-                          L
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-gray-800">
-                            Putih + L
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Hari libur (Jumat/OFF)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mb-6 bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
-                  <h5 className="font-bold text-lg text-green-700 mb-3">
-                    2️⃣ Kedisiplinan Waktu (Evaluasi Disiplin)
-                  </h5>
-                  <p className="text-gray-700 mb-4">
-                    Evaluasi kedisiplinan berdasarkan jadwal mengajar dan
-                    kelengkapan scan
-                  </p>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-20 h-16 bg-green-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
-                            <div>Jadwal: 07:00</div>
-                            <div className="text-green-800">Scan: 06:45 ✓</div>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-green-800 text-base">
-                            🟢 HIJAU = Disiplin Tinggi
-                          </span>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Datang <strong>SEBELUM</strong> jadwal mengajar
-                            dimulai, meskipun lupa scan pulang
-                          </p>
-                          <p className="text-xs text-green-700 mt-1 italic">
-                            ✨ Guru paling disiplin!
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-20 h-16 bg-blue-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
-                            <div>Masuk: 07:15</div>
-                            <div className="text-blue-800">Pulang: 16:30 ✓</div>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-blue-800 text-base">
-                            🔵 BIRU = Scan Lengkap
-                          </span>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Scan <strong>MASUK dan PULANG</strong> lengkap
-                            (administrasi tertib)
-                          </p>
-                          <p className="text-xs text-blue-700 mt-1 italic">
-                            📋 Tertib administrasi
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-20 h-16 bg-yellow-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
-                            <div>Masuk: 08:15</div>
-                            <div className="text-yellow-800">Pulang: - ✗</div>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-yellow-800 text-base">
-                            🟡 KUNING = Tidak Lengkap
-                          </span>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Datang tapi <strong>LUPA scan pulang</strong>, atau
-                            datang setelah jadwal
-                          </p>
-                          <p className="text-xs text-yellow-700 mt-1 italic">
-                            ⚠️ Perlu lebih teliti scan
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-20 h-16 bg-red-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
-                            <div>Masuk: -</div>
-                            <div className="text-red-800">Pulang: -</div>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-red-800 text-base">
-                            🔴 MERAH = Tidak Absen / Alfa
-                          </span>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Datang tapi tidak scan sama sekali, atau tidak hadir
-                          </p>
-                          <p className="text-xs text-red-700 mt-1 italic">
-                            ⚠️ Kesadaran absensi kurang
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-purple-500">
-                  <h5 className="font-bold text-lg text-purple-700 mb-3">
-                    3️⃣ Evaluasi Kehadiran (Status Resmi)
-                  </h5>
-                  <p className="text-gray-700 mb-4">
-                    Status kehadiran berdasarkan jadwal mengajar dan ketepatan
-                    waktu
-                  </p>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
-                        <div className="w-12 h-12 bg-green-300 rounded-full flex items-center justify-center text-2xl font-bold">
-                          H
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-green-800">
-                            H Hijau = Hadir Tepat Waktu
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Scan sebelum/tepat jadwal mengajar
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 p-3 bg-yellow-100 rounded-lg">
-                        <div className="w-12 h-12 bg-yellow-300 rounded-full flex items-center justify-center text-2xl font-bold">
-                          H
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-yellow-800">
-                            H Kuning = Hadir Terlambat
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Scan setelah jadwal mengajar dimulai
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 p-3 bg-red-100 rounded-lg">
-                        <div className="w-12 h-12 bg-red-300 rounded-full flex items-center justify-center text-2xl font-bold">
-                          -
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-red-800">
-                            Tanda Strip = Alpha
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Tidak hadir padahal ada jadwal mengajar
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                        <div className="w-12 h-12 bg-white border-2 border-gray-400 rounded-full flex items-center justify-center text-2xl font-bold">
-                          L
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-gray-800">
-                            L = Libur
-                          </span>
-                          <p className="text-xs text-gray-600">
-                            Tidak ada jadwal mengajar (OFF/Jumat)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-6 p-4 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg border border-indigo-300">
-                  <h6 className="font-bold text-indigo-800 mb-2">
-                    💡 Tips Membaca Rekap:
-                  </h6>
-                  <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
-                    <li>
-                      <strong>Tabel 1</strong> untuk cek kehadiran mentah (ada
-                      scan atau tidak)
-                    </li>
-                    <li>
-                      <strong>Tabel 2</strong> untuk evaluasi kedisiplinan
-                      (tepat waktu atau lupa scan pulang)
-                    </li>
-                    <li>
-                      <strong>Tabel 3</strong> untuk status resmi kehadiran
-                      (H/L/-)
-                    </li>
-                    <li>
-                      Kolom di kanan setiap tabel menunjukkan{' '}
-                      <strong>total perhitungan</strong>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-4">
-                  <button
-                    onClick={handleCopyPanduan}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center gap-2"
-                  >
-                    <FileText size={18} />
-                    Copy JPG Panduan Ini
-                  </button>
-                  <button
-                    onClick={handleDownloadPanduan}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center gap-2"
-                  >
-                    <Download size={18} />
-                    Download JPG Panduan Ini
-                  </button>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Biru */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-blue-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>07:15</div>
+                  <div className="text-blue-800">16:30</div>
                 </div>
               </div>
+              <div className="flex-1">
+                <span className="font-semibold text-blue-800 text-base">
+                  🔵 BIRU = Scan Lengkap
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Scan <strong>MASUK dan PULANG</strong> keduanya tercatat
+                </p>
+                <p className="text-xs text-blue-700 mt-1 italic">
+                  ✅ Data absensi lengkap
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Kuning */}
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-yellow-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>07:15</div>
+                  <div className="text-yellow-800">-</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-yellow-800 text-base">
+                  🟡 KUNING = Scan Tidak Lengkap
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Hanya scan <strong>MASUK saja</strong> atau <strong>PULANG saja</strong>
+                </p>
+                <p className="text-xs text-yellow-700 mt-1 italic">
+                  ⚠️ Data absensi tidak lengkap
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Merah */}
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-red-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>-</div>
+                  <div className="text-red-800">-</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-red-800 text-base">
+                  🔴 MERAH = Tidak Scan
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Tidak ada scan <strong>MASUK maupun PULANG</strong> (Alpha)
+                </p>
+                <p className="text-xs text-red-700 mt-1 italic">
+                  ❌ Tidak ada data absensi
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Putih L */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-white border-2 border-gray-400 rounded-lg flex items-center justify-center text-2xl font-bold text-gray-700">
+                  L
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-gray-800 text-base">
+                  ⚪ PUTIH + L = Libur
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Hari <strong>LIBUR</strong> atau tidak ada jadwal (Jumat/OFF)
+                </p>
+                <p className="text-xs text-gray-600 mt-1 italic">
+                  📅 Tidak perlu scan
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABEL 2: Kedisiplinan Waktu */}
+      <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+        <h5 className="font-bold text-xl text-green-700 mb-3">
+          2️⃣ Kedisiplinan Waktu (Evaluasi Disiplin)
+        </h5>
+        <p className="text-gray-700 mb-5">
+          Evaluasi kedisiplinan berdasarkan jadwal mengajar dan kelengkapan scan
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Hijau */}
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-green-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>Jadwal: 07:00</div>
+                  <div className="text-green-800">Scan: 06:45 ✓</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-green-800 text-base">
+                  🟢 HIJAU = Disiplin Tinggi
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Datang <strong>SEBELUM</strong> jadwal mengajar dimulai
+                </p>
+                <p className="text-xs text-green-700 mt-1 italic">
+                  ✨ Guru paling disiplin!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Biru */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-blue-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>Masuk: 07:15</div>
+                  <div className="text-blue-800">Pulang: 16:30 ✓</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-blue-800 text-base">
+                  🔵 BIRU = Scan Lengkap
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Scan <strong>MASUK dan PULANG</strong> lengkap (administrasi tertib)
+                </p>
+                <p className="text-xs text-blue-700 mt-1 italic">
+                  📋 Tertib administrasi
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Kuning */}
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-yellow-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>Masuk: 08:15</div>
+                  <div className="text-yellow-800">Pulang: - ✗</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-yellow-800 text-base">
+                  🟡 KUNING = Tidak Lengkap
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Datang tapi <strong>LUPA scan pulang</strong>, atau datang setelah jadwal
+                </p>
+                <p className="text-xs text-yellow-700 mt-1 italic">
+                  ⚠️ Perlu lebih teliti scan
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Merah */}
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-red-300 rounded-lg flex flex-col items-center justify-center text-xs font-bold">
+                  <div>Masuk: -</div>
+                  <div className="text-red-800">Pulang: -</div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-red-800 text-base">
+                  🔴 MERAH = Tidak Absen / Alfa
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Datang tapi tidak scan sama sekali, atau tidak hadir
+                </p>
+                <p className="text-xs text-red-700 mt-1 italic">
+                  ❌ Kesadaran absensi kurang
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABEL 3: Evaluasi Kehadiran */}
+      <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+        <h5 className="font-bold text-xl text-purple-700 mb-3">
+          3️⃣ Evaluasi Kehadiran (Status Resmi)
+        </h5>
+        <p className="text-gray-700 mb-5">
+          Status kehadiran berdasarkan jadwal mengajar dan ketepatan waktu
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* H Hijau */}
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-green-300 rounded-lg flex items-center justify-center text-3xl font-bold text-green-800">
+                  H
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-green-800 text-base">
+                  🟢 H HIJAU = Hadir Tepat Waktu
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Scan <strong>SEBELUM/TEPAT</strong> jadwal mengajar dimulai
+                </p>
+                <p className="text-xs text-green-700 mt-1 italic">
+                  ✅ Status kehadiran sempurna
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* H Kuning */}
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-yellow-300 rounded-lg flex items-center justify-center text-3xl font-bold text-yellow-800">
+                  H
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-yellow-800 text-base">
+                  🟡 H KUNING = Hadir Terlambat
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Scan <strong>SETELAH</strong> jadwal mengajar dimulai
+                </p>
+                <p className="text-xs text-yellow-700 mt-1 italic">
+                  ⚠️ Status kehadiran terlambat
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Strip Merah */}
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-red-300 rounded-lg flex items-center justify-center text-4xl font-bold text-red-800">
+                  -
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-red-800 text-base">
+                  🔴 STRIP = Alpha
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Tidak hadir padahal <strong>ADA JADWAL</strong> mengajar
+                </p>
+                <p className="text-xs text-red-700 mt-1 italic">
+                  ❌ Status tidak hadir
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* L Putih */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-16 bg-white border-2 border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold text-gray-700">
+                  L
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-gray-800 text-base">
+                  ⚪ L = Libur
+                </span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Tidak ada <strong>JADWAL MENGAJAR</strong> (OFF/Jumat)
+                </p>
+                <p className="text-xs text-gray-600 mt-1 italic">
+                  📅 Status hari libur
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tips Membaca */}
+      <div className="mb-6 p-5 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg border border-indigo-300">
+        <h6 className="font-bold text-lg text-indigo-800 mb-3">
+          💡 Tips Membaca Rekap:
+        </h6>
+        <ul className="text-sm text-gray-700 space-y-2">
+          <li className="flex items-start gap-2">
+            <span className="font-bold text-indigo-600 min-w-[70px]">Tabel 1</span>
+            <span>untuk cek kehadiran mentah (ada scan atau tidak)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold text-indigo-600 min-w-[70px]">Tabel 2</span>
+            <span>untuk evaluasi kedisiplinan (tepat waktu atau lupa scan pulang)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold text-indigo-600 min-w-[70px]">Tabel 3</span>
+            <span>untuk status resmi kehadiran (H/L/-)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold text-indigo-600 min-w-[70px]">Kolom Kanan</span>
+            <span>di setiap tabel menunjukkan <strong>total perhitungan</strong></span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Tombol Action */}
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={handleCopyPanduan}
+          className="px-5 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+        >
+          <FileText size={20} />
+          Copy JPG Panduan Ini
+        </button>
+        <button
+          onClick={handleDownloadPanduan}
+          className="px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+        >
+          <Download size={20} />
+          Download JPG Panduan Ini
+        </button>
+      </div>
+    </div>
+
             </div>
           )}
           <div className="mt-8 bg-blue-50 rounded-xl p-6">
