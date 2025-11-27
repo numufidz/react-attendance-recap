@@ -2621,7 +2621,7 @@ const AttendanceRecapSystem = () => {
             <div className="text-right text-sm text-gray-500">
               <p>Powered by:</p>
               <p>Matsanuba Management Technology</p>
-              <p>Version 1.0 | © 2025</p>
+              <p>Version 1.27.11 | © 2025</p>
             </div>
           </div>
           <p className="text-gray-600 mb-8 border-t pt-4">
