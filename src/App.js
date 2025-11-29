@@ -22,7 +22,6 @@ const AttendanceRecapSystem = () => {
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [activeRecapTab, setActiveRecapTab] = useState('table1');
   const panduanRef = React.useRef(null);
 
   // Ref untuk capture kesimpulan sebagai gambar
@@ -2768,41 +2767,7 @@ const AttendanceRecapSystem = () => {
           </div>
           {summaryData && renderSummary()}
           {recapData && (
-            <div className="mt-8 border-t pt-8">
-              <div className="flex gap-2 mb-6 border-b overflow-x-auto">
-                <button
-                  onClick={() => setActiveRecapTab('table1')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table1'
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Rekap Mesin
-                </button>
-                <button
-                  onClick={() => setActiveRecapTab('table2')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table2'
-                      ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Kedisiplinan Waktu
-                </button>
-                <button
-                  onClick={() => setActiveRecapTab('table3')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table3'
-                      ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  Evaluasi Kehadiran
-                </button>
-              </div>
-              <div className="space-y-8">
-              {activeRecapTab === 'table1' && (
+            <div className="mt-8 border-t pt-8 space-y-8">
               <div>
                 <div className="bg-blue-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -2880,9 +2845,6 @@ const AttendanceRecapSystem = () => {
                         <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
                           %
                         </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-teal-200">
-                          Durasi Kerja
-                        </th>
                       </tr>
                       <tr className="bg-gray-100">
                         <th className="border border-gray-400" colSpan={4}></th>
@@ -2896,7 +2858,7 @@ const AttendanceRecapSystem = () => {
                             </th>
                           </React.Fragment>
                         ))}
-                        <th className="border border-gray-400" colSpan={7}></th>
+                        <th className="border border-gray-400" colSpan={6}></th>
                       </tr>{' '}
                     </thead>
                     <tbody>
@@ -2905,7 +2867,6 @@ const AttendanceRecapSystem = () => {
                         let biru = 0;
                         let kuning = 0;
                         let merah = 0;
-                        let totalMinutes = 0;
 
                         recapData.dateRange.forEach((dateStr) => {
                           const ev = emp.dailyEvaluation[dateStr];
@@ -2915,17 +2876,7 @@ const AttendanceRecapSystem = () => {
                             const hasIn = rec.in !== '-';
                             const hasOut = rec.out !== '-';
 
-                            if (hasIn && hasOut) {
-                              biru++;
-                              // Hitung durasi hanya untuk hari berwarna biru
-                              const inMinutes = timeToMinutes(rec.in);
-                              const outMinutes = timeToMinutes(rec.out);
-                              if (inMinutes !== null && outMinutes !== null) {
-                                let duration = outMinutes - inMinutes;
-                                if (duration < 0) duration += 24 * 60; // Handle midnight crossing
-                                totalMinutes += duration;
-                              }
-                            }
+                            if (hasIn && hasOut) biru++;
                             else if (!hasIn && !hasOut) merah++;
                             else kuning++;
                           }
@@ -2936,10 +2887,6 @@ const AttendanceRecapSystem = () => {
                           hariKerja > 0
                             ? Math.round((hadir / hariKerja) * 100)
                             : 0;
-
-                        const durasiHours = Math.floor(totalMinutes / 60);
-                        const durasiMinutes = totalMinutes % 60;
-                        const durasiText = `${String(durasiHours).padStart(2, '0')}:${String(durasiMinutes).padStart(2, '0')}`;
 
                         return (
                           <tr key={emp.no}>
@@ -3023,9 +2970,6 @@ const AttendanceRecapSystem = () => {
                             <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
                               {persentase}%
                             </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-teal-100">
-                              {durasiText}
-                            </td>
                           </tr>
                         );
                       })}
@@ -3033,8 +2977,6 @@ const AttendanceRecapSystem = () => {
                   </table>
                 </div>
               </div>
-              )}
-              {activeRecapTab === 'table2' && (
               <div>
                 <div className="bg-green-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -3274,8 +3216,6 @@ const AttendanceRecapSystem = () => {
                   </table>
                 </div>
               </div>
-              )}
-              {activeRecapTab === 'table3' && (
               <div>
                 <div className="bg-purple-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -3434,8 +3374,6 @@ const AttendanceRecapSystem = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
-              )}
               </div>
               <div
                 ref={panduanRef}
