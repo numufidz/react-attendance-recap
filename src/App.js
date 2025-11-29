@@ -22,7 +22,7 @@ const AttendanceRecapSystem = () => {
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [activeRecapTab, setActiveRecapTab] = useState('table1');
+  const [activeRecapTab, setActiveRecapTab] = useState('summary');
   const panduanRef = React.useRef(null);
 
   // Ref untuk capture kesimpulan sebagai gambar
@@ -2766,677 +2766,58 @@ const AttendanceRecapSystem = () => {
               </button>
             </div>
           </div>
-          {summaryData && renderSummary()}
           {recapData && (
-            <div className="mt-8 border-t pt-8">
-              <div className="flex gap-2 mb-6 border-b overflow-x-auto">
-                <button
-                  onClick={() => setActiveRecapTab('table1')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table1'
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-800'
+            <div className="flex gap-2 mb-6 border-b overflow-x-auto">
+              <button
+                onClick={() => setActiveRecapTab('summary')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'summary'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                  : 'text-gray-600 hover:text-gray-800'
                   }`}
-                >
-                  Rekap Mesin
-                </button>
-                <button
-                  onClick={() => setActiveRecapTab('table2')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table2'
-                      ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
-                      : 'text-gray-600 hover:text-gray-800'
+              >
+                1. Kesimpulan Profil
+              </button>
+              <button
+                onClick={() => setActiveRecapTab('table1')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'table1'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-800'
                   }`}
-                >
-                  Kedisiplinan Waktu
-                </button>
-                <button
-                  onClick={() => setActiveRecapTab('table3')}
-                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
-                    activeRecapTab === 'table3'
-                      ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-800'
+              >
+                2. Tabel 1 (Rekap Mesin)
+              </button>
+              <button
+                onClick={() => setActiveRecapTab('table2')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'table2'
+                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                  : 'text-gray-600 hover:text-gray-800'
                   }`}
-                >
-                  Evaluasi Kehadiran
-                </button>
-              </div>
-              <div className="space-y-8">
-              {activeRecapTab === 'table1' && (
-              <div>
-                <div className="bg-blue-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-800">
-                    1. Rekap Mesin
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => copyTableToClipboard('tabel1')}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Copy-Paste Tabel ke Excel
-                    </button>
-                    <button
-                      onClick={() =>
-                        downloadTableAsExcel('tabel1', 'rekap_mesin')
-                      }
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download Excel
-                    </button>
-                    <button
-                      onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download PDF
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto border rounded-lg mb-8">
-                  <table
-                    id="tabel1"
-                    className="min-w-full text-sm border-collapse bg-white"
-                  >
-                    <thead>
-                      <tr className="bg-gray-300">
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          No
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          ID
-                        </th>
-                        <th
-                          className="border border-gray-400 px-2 py-2 text-black font-bold"
-                          style={{ minWidth: '220px' }}
-                        >
-                          Nama
-                        </th>
-                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
-                          Jabatan
-                        </th>
-                        {recapData.dateRange.map((date) => (
-                          <th
-                            key={date}
-                            className="border border-gray-400 px-2 py-2 text-black font-bold"
-                            colSpan={2}
-                          >
-                            {getDateLabel(date)}
-                          </th>
-                        ))}
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
-                          Hari Kerja
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
-                          Biru
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
-                          Kuning
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
-                          Merah
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-indigo-200">
-                          Hadir
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
-                          %
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-teal-200">
-                          Durasi Kerja
-                        </th>
-                      </tr>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-400" colSpan={4}></th>
-                        {recapData.dateRange.map((date) => (
-                          <React.Fragment key={date}>
-                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
-                              Masuk
-                            </th>
-                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
-                              Pulang
-                            </th>
-                          </React.Fragment>
-                        ))}
-                        <th className="border border-gray-400" colSpan={7}></th>
-                      </tr>{' '}
-                    </thead>
-                    <tbody>
-                      {recapData.recap.map((emp) => {
-                        let hariKerja = 0;
-                        let biru = 0;
-                        let kuning = 0;
-                        let merah = 0;
-                        let totalMinutes = 0;
-
-                        recapData.dateRange.forEach((dateStr) => {
-                          const ev = emp.dailyEvaluation[dateStr];
-                          if (ev.text !== 'L') {
-                            hariKerja++;
-                            const rec = emp.dailyRecords[dateStr];
-                            const hasIn = rec.in !== '-';
-                            const hasOut = rec.out !== '-';
-
-                            if (hasIn && hasOut) {
-                              biru++;
-                              // Hitung durasi hanya untuk hari berwarna biru
-                              const inMinutes = timeToMinutes(rec.in);
-                              const outMinutes = timeToMinutes(rec.out);
-                              if (inMinutes !== null && outMinutes !== null) {
-                                let duration = outMinutes - inMinutes;
-                                if (duration < 0) duration += 24 * 60; // Handle midnight crossing
-                                totalMinutes += duration;
-                              }
-                            }
-                            else if (!hasIn && !hasOut) merah++;
-                            else kuning++;
-                          }
-                        });
-
-                        const hadir = biru + kuning;
-                        const persentase =
-                          hariKerja > 0
-                            ? Math.round((hadir / hariKerja) * 100)
-                            : 0;
-
-                        const durasiHours = Math.floor(totalMinutes / 60);
-                        const durasiMinutes = totalMinutes % 60;
-                        const durasiText = `${String(durasiHours).padStart(2, '0')}:${String(durasiMinutes).padStart(2, '0')}`;
-
-                        return (
-                          <tr key={emp.no}>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.no}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.id}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.name}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.position}
-                            </td>
-                            {recapData.dateRange.map((date) => {
-                              const rec = emp.dailyRecords[date];
-                              const ev = emp.dailyEvaluation[date];
-                              if (ev.text === 'L') {
-                                return (
-                                  <>
-                                    <td
-                                      key={date + '-in'}
-                                      className="border border-gray-400 text-center font-bold"
-                                    >
-                                      L
-                                    </td>
-                                    <td
-                                      key={date + '-out'}
-                                      className="border border-gray-400 text-center font-bold"
-                                    >
-                                      L
-                                    </td>
-                                  </>
-                                );
-                              }
-                              const hasIn = rec.in !== '-';
-                              const hasOut = rec.out !== '-';
-                              const bg =
-                                hasIn && hasOut
-                                  ? 'bg-blue-200'
-                                  : !hasIn && !hasOut
-                                  ? 'bg-red-200'
-                                  : 'bg-yellow-200';
-                              return (
-                                <React.Fragment key={date}>
-                                  <td
-                                    className={
-                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                      bg
-                                    }
-                                  >
-                                    {rec.in}
-                                  </td>
-                                  <td
-                                    className={
-                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                      bg
-                                    }
-                                  >
-                                    {rec.out}
-                                  </td>
-                                </React.Fragment>
-                              );
-                            })}
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
-                              {hariKerja}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-blue-100">
-                              {biru}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
-                              {kuning}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
-                              {merah}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-indigo-100">
-                              {hadir}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
-                              {persentase}%
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-teal-100">
-                              {durasiText}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              )}
-              {activeRecapTab === 'table2' && (
-              <div>
-                <div className="bg-green-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-800">
-                    2. Kedisiplinan Waktu
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => copyTableToClipboard('tabel2')}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Copy-Paste Tabel ke Excel
-                    </button>
-                    <button
-                      onClick={() =>
-                        downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
-                      }
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download Excel
-                    </button>
-                    <button
-                      onClick={() =>
-                        downloadAsPdf('tabel2', 'kedisiplinan_waktu')
-                      }
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download PDF
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto border rounded-lg mb-8">
-                  <table
-                    id="tabel2"
-                    className="min-w-full text-sm border-collapse bg-white"
-                  >
-                    <thead>
-                      <tr className="bg-gray-300">
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          No
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          ID
-                        </th>
-                        <th
-                          className="border border-gray-400 px-2 py-2 text-black font-bold"
-                          style={{ minWidth: '220px' }}
-                        >
-                          Nama
-                        </th>
-                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
-                          Jabatan
-                        </th>
-                        {recapData.dateRange.map((date) => (
-                          <th
-                            key={date}
-                            className="border border-gray-400 px-2 py-2 text-black font-bold"
-                            colSpan={2}
-                          >
-                            {getDateLabel(date)}
-                          </th>
-                        ))}
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
-                          Hari Kerja
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
-                          Hijau
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
-                          Biru
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
-                          Kuning
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
-                          Merah
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
-                          %
-                        </th>
-                      </tr>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-400" colSpan={4}></th>
-                        {recapData.dateRange.map((date) => (
-                          <React.Fragment key={date}>
-                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
-                              Masuk
-                            </th>
-                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
-                              Pulang
-                            </th>
-                          </React.Fragment>
-                        ))}
-                        <th className="border border-gray-400" colSpan={6}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recapData.recap.map((emp) => {
-                        const sched = scheduleData.find((s) => s.id === emp.id);
-                        let hariKerja = 0;
-                        let hijau = 0;
-                        let biru = 0;
-                        let kuning = 0;
-                        let merah = 0;
-
-                        recapData.dateRange.forEach((dateStr) => {
-                          const ev = emp.dailyEvaluation[dateStr];
-                          if (ev.text !== 'L') {
-                            hariKerja++;
-                            const rec = emp.dailyRecords[dateStr];
-                            const hasIn = rec.in !== '-';
-                            const hasOut = rec.out !== '-';
-
-                            if (!hasIn && !hasOut) {
-                              merah++;
-                            } else if (hasIn && hasOut) {
-                              biru++;
-                            } else if (hasIn) {
-                              const dayName = getDayName(dateStr);
-                              const schedStart =
-                                sched?.schedule[dayName]?.start;
-                              const inMin = timeToMinutes(rec.in);
-                              const schedMin = timeToMinutes(schedStart);
-                              if (schedMin && inMin && inMin <= schedMin) {
-                                hijau++;
-                              } else {
-                                kuning++;
-                              }
-                            } else {
-                              kuning++;
-                            }
-                          }
-                        });
-
-                        const disiplin = hijau + biru;
-                        const persentase =
-                          hariKerja > 0
-                            ? Math.round((disiplin / hariKerja) * 100)
-                            : 0;
-
-                        return (
-                          <tr key={emp.no}>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.no}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.id}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.name}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.position}
-                            </td>
-                            {recapData.dateRange.map((date) => {
-                              const rec = emp.dailyRecords[date];
-                              const ev = emp.dailyEvaluation[date];
-                              if (ev.text === 'L') {
-                                return (
-                                  <>
-                                    <td
-                                      key={date + '-in'}
-                                      className="border border-gray-400 text-center font-bold"
-                                    >
-                                      L
-                                    </td>
-                                    <td
-                                      key={date + '-out'}
-                                      className="border border-gray-400 text-center font-bold"
-                                    >
-                                      L
-                                    </td>
-                                  </>
-                                );
-                              }
-                              const hasIn = rec.in !== '-';
-                              const hasOut = rec.out !== '-';
-                              let bg = 'bg-red-200';
-                              if (hasIn && hasOut) {
-                                bg = 'bg-blue-300';
-                              } else if (hasIn) {
-                                const dayName = getDayName(date);
-                                const schedStart =
-                                  sched?.schedule[dayName]?.start;
-                                const inMin = timeToMinutes(rec.in);
-                                const schedMin = timeToMinutes(schedStart);
-                                if (schedMin && inMin && inMin <= schedMin) {
-                                  bg = 'bg-green-300';
-                                } else {
-                                  bg = 'bg-yellow-300';
-                                }
-                              } else if (hasOut) {
-                                bg = 'bg-yellow-300';
-                              }
-                              return (
-                                <React.Fragment key={date}>
-                                  <td
-                                    className={
-                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                      bg
-                                    }
-                                  >
-                                    {rec.in}
-                                  </td>
-                                  <td
-                                    className={
-                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                      bg
-                                    }
-                                  >
-                                    {rec.out}
-                                  </td>
-                                </React.Fragment>
-                              );
-                            })}
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
-                              {hariKerja}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
-                              {hijau}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-blue-100">
-                              {biru}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
-                              {kuning}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
-                              {merah}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
-                              {persentase}%
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              )}
-              {activeRecapTab === 'table3' && (
-              <div>
-                <div className="bg-purple-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-800">
-                    3. Evaluasi Kehadiran
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => copyTableToClipboard('tabel3')}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Copy-Paste Tabel ke Excel
-                    </button>
-                    <button
-                      onClick={() =>
-                        downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
-                      }
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download Excel
-                    </button>
-                    <button
-                      onClick={() =>
-                        downloadAsPdf('tabel3', 'evaluasi_kehadiran')
-                      }
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                    >
-                      <Download size={16} /> Download PDF
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto border rounded-lg mb-8">
-                  <table
-                    id="tabel3"
-                    className="min-w-full text-sm border-collapse bg-white"
-                  >
-                    <thead>
-                      <tr className="bg-gray-300">
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          No
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
-                          ID
-                        </th>
-                        <th
-                          className="border border-gray-400 px-2 py-2 text-black font-bold"
-                          style={{ minWidth: '220px' }}
-                        >
-                          Nama
-                        </th>
-                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
-                          Jabatan
-                        </th>
-                        {recapData.dateRange.map((date) => (
-                          <th
-                            key={date}
-                            className="border border-gray-400 px-2 py-2 text-black font-bold"
-                          >
-                            {getDateLabel(date)}
-                          </th>
-                        ))}
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
-                          Hari Kerja
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
-                          Hadir
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
-                          Tepat
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
-                          Telat
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
-                          Alfa
-                        </th>
-                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
-                          %
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recapData.recap.map((emp) => {
-                        let hariKerja = 0;
-                        let totalH = 0;
-                        let tepat = 0;
-                        let telat = 0;
-                        let alfa = 0;
-
-                        recapData.dateRange.forEach((dateStr) => {
-                          const ev = emp.dailyEvaluation[dateStr];
-                          if (ev.text !== 'L') {
-                            hariKerja++;
-                            if (ev.text === 'H') {
-                              totalH++;
-                              if (ev.color === '90EE90') tepat++;
-                              else if (ev.color === 'FFFF99') telat++;
-                            } else if (ev.text === '-') {
-                              alfa++;
-                            }
-                          }
-                        });
-
-                        const persentase =
-                          hariKerja > 0
-                            ? Math.round((totalH / hariKerja) * 100)
-                            : 0;
-
-                        return (
-                          <tr key={emp.no}>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.no}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center">
-                              {emp.id}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.name}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2">
-                              {emp.position}
-                            </td>
-                            {recapData.dateRange.map((date) => {
-                              const ev = emp.dailyEvaluation[date];
-                              const bgColor = '#' + ev.color;
-                              return (
-                                <td
-                                  key={date}
-                                  className="border border-gray-400 px-2 py-2 text-center font-bold"
-                                  style={{ backgroundColor: bgColor }}
-                                >
-                                  {ev.text}
-                                </td>
-                              );
-                            })}
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
-                              {hariKerja}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
-                              {totalH}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
-                              {tepat}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
-                              {telat}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
-                              {alfa}
-                            </td>
-                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
-                              {persentase}%
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              )}
-              </div>
+              >
+                3. Tabel 2 (Kedisiplinan)
+              </button>
+              <button
+                onClick={() => setActiveRecapTab('table3')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'table3'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
+              >
+                4. Tabel 3 (Evaluasi)
+              </button>
+              <button
+                onClick={() => setActiveRecapTab('guide')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'guide'
+                  ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
+              >
+                5. Panduan Lengkap
+              </button>
+            </div>
+          )}
+          <div className="space-y-8">
+            {activeRecapTab === 'summary' && renderSummary()}
+            {activeRecapTab === 'guide' && (
               <div
                 ref={panduanRef}
                 className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl"
@@ -3831,8 +3212,643 @@ const AttendanceRecapSystem = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+            {activeRecapTab === 'table1' && (
+              <div>
+                <div className="bg-blue-100 p-4 rounded-lg mb-3 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    1. Rekap Mesin
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => copyTableToClipboard('tabel1')}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Copy-Paste Tabel ke Excel
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadTableAsExcel('tabel1', 'rekap_mesin')
+                      }
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download Excel
+                    </button>
+                    <button
+                      onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download PDF
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto border rounded-lg mb-8">
+                  <table
+                    id="tabel1"
+                    className="min-w-full text-sm border-collapse bg-white"
+                  >
+                    <thead>
+                      <tr className="bg-gray-300">
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          No
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          ID
+                        </th>
+                        <th
+                          className="border border-gray-400 px-2 py-2 text-black font-bold"
+                          style={{ minWidth: '220px' }}
+                        >
+                          Nama
+                        </th>
+                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
+                          Jabatan
+                        </th>
+                        {recapData.dateRange.map((date) => (
+                          <th
+                            key={date}
+                            className="border border-gray-400 px-2 py-2 text-black font-bold"
+                            colSpan={2}
+                          >
+                            {getDateLabel(date)}
+                          </th>
+                        ))}
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                          Hari Kerja
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
+                          Biru
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                          Kuning
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                          Merah
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-indigo-200">
+                          Hadir
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                          %
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-teal-200">
+                          Durasi Kerja
+                        </th>
+                      </tr>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-400" colSpan={4}></th>
+                        {recapData.dateRange.map((date) => (
+                          <React.Fragment key={date}>
+                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
+                              Masuk
+                            </th>
+                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
+                              Pulang
+                            </th>
+                          </React.Fragment>
+                        ))}
+                        <th className="border border-gray-400" colSpan={7}></th>
+                      </tr>{' '}
+                    </thead>
+                    <tbody>
+                      {recapData.recap.map((emp) => {
+                        let hariKerja = 0;
+                        let biru = 0;
+                        let kuning = 0;
+                        let merah = 0;
+                        let totalMinutes = 0;
+
+                        recapData.dateRange.forEach((dateStr) => {
+                          const ev = emp.dailyEvaluation[dateStr];
+                          if (ev.text !== 'L') {
+                            hariKerja++;
+                            const rec = emp.dailyRecords[dateStr];
+                            const hasIn = rec.in !== '-';
+                            const hasOut = rec.out !== '-';
+
+                            if (hasIn && hasOut) {
+                              biru++;
+                              // Hitung durasi hanya untuk hari berwarna biru
+                              const inMinutes = timeToMinutes(rec.in);
+                              const outMinutes = timeToMinutes(rec.out);
+                              if (inMinutes !== null && outMinutes !== null) {
+                                let duration = outMinutes - inMinutes;
+                                if (duration < 0) duration += 24 * 60; // Handle midnight crossing
+                                totalMinutes += duration;
+                              }
+                            }
+                            else if (!hasIn && !hasOut) merah++;
+                            else kuning++;
+                          }
+                        });
+
+                        const hadir = biru + kuning;
+                        const persentase =
+                          hariKerja > 0
+                            ? Math.round((hadir / hariKerja) * 100)
+                            : 0;
+
+                        const durasiHours = Math.floor(totalMinutes / 60);
+                        const durasiMinutes = totalMinutes % 60;
+                        const durasiText = `${String(durasiHours).padStart(2, '0')}:${String(durasiMinutes).padStart(2, '0')}`;
+
+                        return (
+                          <tr key={emp.no}>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.no}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.id}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.name}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.position}
+                            </td>
+                            {recapData.dateRange.map((date) => {
+                              const rec = emp.dailyRecords[date];
+                              const ev = emp.dailyEvaluation[date];
+                              if (ev.text === 'L') {
+                                return (
+                                  <>
+                                    <td
+                                      key={date + '-in'}
+                                      className="border border-gray-400 text-center font-bold"
+                                    >
+                                      L
+                                    </td>
+                                    <td
+                                      key={date + '-out'}
+                                      className="border border-gray-400 text-center font-bold"
+                                    >
+                                      L
+                                    </td>
+                                  </>
+                                );
+                              }
+                              const hasIn = rec.in !== '-';
+                              const hasOut = rec.out !== '-';
+                              const bg =
+                                hasIn && hasOut
+                                  ? 'bg-blue-200'
+                                  : !hasIn && !hasOut
+                                    ? 'bg-red-200'
+                                    : 'bg-yellow-200';
+                              return (
+                                <React.Fragment key={date}>
+                                  <td
+                                    className={
+                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
+                                      bg
+                                    }
+                                  >
+                                    {rec.in}
+                                  </td>
+                                  <td
+                                    className={
+                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
+                                      bg
+                                    }
+                                  >
+                                    {rec.out}
+                                  </td>
+                                </React.Fragment>
+                              );
+                            })}
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
+                              {hariKerja}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-blue-100">
+                              {biru}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
+                              {kuning}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
+                              {merah}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-indigo-100">
+                              {hadir}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
+                              {persentase}%
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-teal-100">
+                              {durasiText}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {activeRecapTab === 'table2' && (
+              <div>
+                <div className="bg-green-100 p-4 rounded-lg mb-3 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    2. Kedisiplinan Waktu
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => copyTableToClipboard('tabel2')}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Copy-Paste Tabel ke Excel
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
+                      }
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download Excel
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadAsPdf('tabel2', 'kedisiplinan_waktu')
+                      }
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download PDF
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto border rounded-lg mb-8">
+                  <table
+                    id="tabel2"
+                    className="min-w-full text-sm border-collapse bg-white"
+                  >
+                    <thead>
+                      <tr className="bg-gray-300">
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          No
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          ID
+                        </th>
+                        <th
+                          className="border border-gray-400 px-2 py-2 text-black font-bold"
+                          style={{ minWidth: '220px' }}
+                        >
+                          Nama
+                        </th>
+                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
+                          Jabatan
+                        </th>
+                        {recapData.dateRange.map((date) => (
+                          <th
+                            key={date}
+                            className="border border-gray-400 px-2 py-2 text-black font-bold"
+                            colSpan={2}
+                          >
+                            {getDateLabel(date)}
+                          </th>
+                        ))}
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                          Hari Kerja
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                          Hijau
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
+                          Biru
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                          Kuning
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                          Merah
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                          %
+                        </th>
+                      </tr>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-400" colSpan={4}></th>
+                        {recapData.dateRange.map((date) => (
+                          <React.Fragment key={date}>
+                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
+                              Masuk
+                            </th>
+                            <th className="border border-gray-400 px-1 py-1 text-gray-700 text-xs">
+                              Pulang
+                            </th>
+                          </React.Fragment>
+                        ))}
+                        <th className="border border-gray-400" colSpan={6}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recapData.recap.map((emp) => {
+                        const sched = scheduleData.find((s) => s.id === emp.id);
+                        let hariKerja = 0;
+                        let hijau = 0;
+                        let biru = 0;
+                        let kuning = 0;
+                        let merah = 0;
+
+                        recapData.dateRange.forEach((dateStr) => {
+                          const ev = emp.dailyEvaluation[dateStr];
+                          if (ev.text !== 'L') {
+                            hariKerja++;
+                            const rec = emp.dailyRecords[dateStr];
+                            const hasIn = rec.in !== '-';
+                            const hasOut = rec.out !== '-';
+
+                            if (!hasIn && !hasOut) {
+                              merah++;
+                            } else if (hasIn && hasOut) {
+                              biru++;
+                            } else if (hasIn) {
+                              const dayName = getDayName(dateStr);
+                              const schedStart =
+                                sched?.schedule[dayName]?.start;
+                              const inMin = timeToMinutes(rec.in);
+                              const schedMin = timeToMinutes(schedStart);
+                              if (schedMin && inMin && inMin <= schedMin) {
+                                hijau++;
+                              } else {
+                                kuning++;
+                              }
+                            } else {
+                              kuning++;
+                            }
+                          }
+                        });
+
+                        const disiplin = hijau + biru;
+                        const persentase =
+                          hariKerja > 0
+                            ? Math.round((disiplin / hariKerja) * 100)
+                            : 0;
+
+                        return (
+                          <tr key={emp.no}>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.no}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.id}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.name}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.position}
+                            </td>
+                            {recapData.dateRange.map((date) => {
+                              const rec = emp.dailyRecords[date];
+                              const ev = emp.dailyEvaluation[date];
+                              if (ev.text === 'L') {
+                                return (
+                                  <>
+                                    <td
+                                      key={date + '-in'}
+                                      className="border border-gray-400 text-center font-bold"
+                                    >
+                                      L
+                                    </td>
+                                    <td
+                                      key={date + '-out'}
+                                      className="border border-gray-400 text-center font-bold"
+                                    >
+                                      L
+                                    </td>
+                                  </>
+                                );
+                              }
+                              const hasIn = rec.in !== '-';
+                              const hasOut = rec.out !== '-';
+                              let bg = 'bg-red-200';
+                              if (hasIn && hasOut) {
+                                bg = 'bg-blue-300';
+                              } else if (hasIn) {
+                                const dayName = getDayName(date);
+                                const schedStart =
+                                  sched?.schedule[dayName]?.start;
+                                const inMin = timeToMinutes(rec.in);
+                                const schedMin = timeToMinutes(schedStart);
+                                if (schedMin && inMin && inMin <= schedMin) {
+                                  bg = 'bg-green-300';
+                                } else {
+                                  bg = 'bg-yellow-300';
+                                }
+                              } else if (hasOut) {
+                                bg = 'bg-yellow-300';
+                              }
+                              return (
+                                <React.Fragment key={date}>
+                                  <td
+                                    className={
+                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
+                                      bg
+                                    }
+                                  >
+                                    {rec.in}
+                                  </td>
+                                  <td
+                                    className={
+                                      'border border-gray-400 px-1 py-1 text-center text-xs ' +
+                                      bg
+                                    }
+                                  >
+                                    {rec.out}
+                                  </td>
+                                </React.Fragment>
+                              );
+                            })}
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
+                              {hariKerja}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
+                              {hijau}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-blue-100">
+                              {biru}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
+                              {kuning}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
+                              {merah}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
+                              {persentase}%
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {activeRecapTab === 'table3' && (
+              <div>
+                <div className="bg-purple-100 p-4 rounded-lg mb-3 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    3. Evaluasi Kehadiran
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => copyTableToClipboard('tabel3')}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Copy-Paste Tabel ke Excel
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
+                      }
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download Excel
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadAsPdf('tabel3', 'evaluasi_kehadiran')
+                      }
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                    >
+                      <Download size={16} /> Download PDF
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto border rounded-lg mb-8">
+                  <table
+                    id="tabel3"
+                    className="min-w-full text-sm border-collapse bg-white"
+                  >
+                    <thead>
+                      <tr className="bg-gray-300">
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          No
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                          ID
+                        </th>
+                        <th
+                          className="border border-gray-400 px-2 py-2 text-black font-bold"
+                          style={{ minWidth: '220px' }}
+                        >
+                          Nama
+                        </th>
+                        <th className="border border-gray-400 px-6 py-3 text-black font-bold min-w-[120px]">
+                          Jabatan
+                        </th>
+                        {recapData.dateRange.map((date) => (
+                          <th
+                            key={date}
+                            className="border border-gray-400 px-2 py-2 text-black font-bold"
+                          >
+                            {getDateLabel(date)}
+                          </th>
+                        ))}
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                          Hari Kerja
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                          Hadir
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                          Tepat
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                          Telat
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                          Alfa
+                        </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                          %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recapData.recap.map((emp) => {
+                        let hariKerja = 0;
+                        let totalH = 0;
+                        let tepat = 0;
+                        let telat = 0;
+                        let alfa = 0;
+
+                        recapData.dateRange.forEach((dateStr) => {
+                          const ev = emp.dailyEvaluation[dateStr];
+                          if (ev.text !== 'L') {
+                            hariKerja++;
+                            if (ev.text === 'H') {
+                              totalH++;
+                              if (ev.color === '90EE90') tepat++;
+                              else if (ev.color === 'FFFF99') telat++;
+                            } else if (ev.text === '-') {
+                              alfa++;
+                            }
+                          }
+                        });
+
+                        const persentase =
+                          hariKerja > 0
+                            ? Math.round((totalH / hariKerja) * 100)
+                            : 0;
+
+                        return (
+                          <tr key={emp.no}>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.no}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center">
+                              {emp.id}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.name}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2">
+                              {emp.position}
+                            </td>
+                            {recapData.dateRange.map((date) => {
+                              const ev = emp.dailyEvaluation[date];
+                              const bgColor = '#' + ev.color;
+                              return (
+                                <td
+                                  key={date}
+                                  className="border border-gray-400 px-2 py-2 text-center font-bold"
+                                  style={{ backgroundColor: bgColor }}
+                                >
+                                  {ev.text}
+                                </td>
+                              );
+                            })}
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-gray-100">
+                              {hariKerja}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
+                              {totalH}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-green-100">
+                              {tepat}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-yellow-100">
+                              {telat}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-red-100">
+                              {alfa}
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
+                              {persentase}%
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="mt-8 bg-blue-50 rounded-xl p-6">
             <h3 className="font-semibold text-gray-800 mb-3">
               Cara Penggunaan:
@@ -3849,9 +3865,9 @@ const AttendanceRecapSystem = () => {
               </li>
             </ol>
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 };
 
