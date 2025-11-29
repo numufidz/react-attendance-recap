@@ -22,6 +22,7 @@ const AttendanceRecapSystem = () => {
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [activeRecapTab, setActiveRecapTab] = useState('table1');
   const panduanRef = React.useRef(null);
 
   // Ref untuk capture kesimpulan sebagai gambar
@@ -2767,7 +2768,41 @@ const AttendanceRecapSystem = () => {
           </div>
           {summaryData && renderSummary()}
           {recapData && (
-            <div className="mt-8 border-t pt-8 space-y-8">
+            <div className="mt-8 border-t pt-8">
+              <div className="flex gap-2 mb-6 border-b overflow-x-auto">
+                <button
+                  onClick={() => setActiveRecapTab('table1')}
+                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
+                    activeRecapTab === 'table1'
+                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Rekap Mesin
+                </button>
+                <button
+                  onClick={() => setActiveRecapTab('table2')}
+                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
+                    activeRecapTab === 'table2'
+                      ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Kedisiplinan Waktu
+                </button>
+                <button
+                  onClick={() => setActiveRecapTab('table3')}
+                  className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
+                    activeRecapTab === 'table3'
+                      ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Evaluasi Kehadiran
+                </button>
+              </div>
+              <div className="space-y-8">
+              {activeRecapTab === 'table1' && (
               <div>
                 <div className="bg-blue-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -2998,6 +3033,8 @@ const AttendanceRecapSystem = () => {
                   </table>
                 </div>
               </div>
+              )}
+              {activeRecapTab === 'table2' && (
               <div>
                 <div className="bg-green-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -3237,6 +3274,8 @@ const AttendanceRecapSystem = () => {
                   </table>
                 </div>
               </div>
+              )}
+              {activeRecapTab === 'table3' && (
               <div>
                 <div className="bg-purple-100 p-4 rounded-lg mb-3 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">
@@ -3395,6 +3434,8 @@ const AttendanceRecapSystem = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+              )}
               </div>
               <div
                 ref={panduanRef}
