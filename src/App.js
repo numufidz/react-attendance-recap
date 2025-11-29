@@ -2845,6 +2845,9 @@ const AttendanceRecapSystem = () => {
                         <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
                           %
                         </th>
+                        <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-teal-200">
+                          Durasi Kerja
+                        </th>
                       </tr>
                       <tr className="bg-gray-100">
                         <th className="border border-gray-400" colSpan={4}></th>
@@ -2858,7 +2861,7 @@ const AttendanceRecapSystem = () => {
                             </th>
                           </React.Fragment>
                         ))}
-                        <th className="border border-gray-400" colSpan={6}></th>
+                        <th className="border border-gray-400" colSpan={7}></th>
                       </tr>{' '}
                     </thead>
                     <tbody>
@@ -2867,6 +2870,7 @@ const AttendanceRecapSystem = () => {
                         let biru = 0;
                         let kuning = 0;
                         let merah = 0;
+                        let totalMinutes = 0;
 
                         recapData.dateRange.forEach((dateStr) => {
                           const ev = emp.dailyEvaluation[dateStr];
@@ -2876,7 +2880,17 @@ const AttendanceRecapSystem = () => {
                             const hasIn = rec.in !== '-';
                             const hasOut = rec.out !== '-';
 
-                            if (hasIn && hasOut) biru++;
+                            if (hasIn && hasOut) {
+                              biru++;
+                              // Hitung durasi hanya untuk hari berwarna biru
+                              const inMinutes = timeToMinutes(rec.in);
+                              const outMinutes = timeToMinutes(rec.out);
+                              if (inMinutes !== null && outMinutes !== null) {
+                                let duration = outMinutes - inMinutes;
+                                if (duration < 0) duration += 24 * 60; // Handle midnight crossing
+                                totalMinutes += duration;
+                              }
+                            }
                             else if (!hasIn && !hasOut) merah++;
                             else kuning++;
                           }
@@ -2887,6 +2901,10 @@ const AttendanceRecapSystem = () => {
                           hariKerja > 0
                             ? Math.round((hadir / hariKerja) * 100)
                             : 0;
+
+                        const durasiHours = Math.floor(totalMinutes / 60);
+                        const durasiMinutes = totalMinutes % 60;
+                        const durasiText = `${String(durasiHours).padStart(2, '0')}:${String(durasiMinutes).padStart(2, '0')}`;
 
                         return (
                           <tr key={emp.no}>
@@ -2969,6 +2987,9 @@ const AttendanceRecapSystem = () => {
                             </td>
                             <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-purple-100">
                               {persentase}%
+                            </td>
+                            <td className="border border-gray-400 px-2 py-2 text-center font-bold bg-teal-100">
+                              {durasiText}
                             </td>
                           </tr>
                         );
