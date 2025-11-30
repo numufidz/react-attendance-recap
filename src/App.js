@@ -1594,7 +1594,7 @@ const AttendanceRecapSystem = () => {
     // ============= HALAMAN 6: PANDUAN LENGKAP =============
     // Cari elemen panduan dari ref atau dari DOM
     let panduanElement = panduanRef.current;
-    
+
     // Jika ref null, aktifkan tab guide sementara untuk memastikan elemen ter-render
     if (!panduanElement) {
       const originalTab = activeRecapTab;
@@ -1658,7 +1658,7 @@ const AttendanceRecapSystem = () => {
       const scaledHeight = panduanHeight * ratio;
 
       doc.addImage(panduanImg, 'JPEG', 30, 80, scaledWidth, scaledHeight);
-      
+
       // Handle jika panduan terlalu panjang (multiple pages)
       let panduanHeightLeft = scaledHeight - contentHeight;
       while (panduanHeightLeft > 0) {
@@ -1672,7 +1672,7 @@ const AttendanceRecapSystem = () => {
         doc.setFontSize(11);
         doc.setFont(undefined, 'normal');
         doc.text('PANDUAN LENGKAP (lanjutan)', 40, 38);
-        
+
         const nextPageMarginTop = 70;
         const nextYPosition = nextPageMarginTop - (scaledHeight - panduanHeightLeft);
         doc.addImage(
@@ -2721,30 +2721,30 @@ const AttendanceRecapSystem = () => {
 
 
 
-        <div className="mt-4 flex gap-3">
+        <div className="mt-4 grid grid-cols-2 md:flex gap-3">
           <button
             onClick={downloadSummaryAsPdf}
             className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
           >
-            <Download size={16} /> Download PDF Kesimpulan
+            <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Kesimpulan</span>
           </button>
           <button
             onClick={downloadAllTablesAsExcel}
             className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
           >
-            <Download size={16} /> Download Excel Lengkap (3 Tabel)
+            <Download size={16} /> <span className="md:hidden">Excel</span><span className="hidden md:inline">Download Excel Lengkap (3 Tabel)</span>
           </button>
           <button
             onClick={handleCopySummary}
             className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
           >
-            <FileText size={16} /> Copy JPG Kesimpulan
+            <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Kesimpulan</span>
           </button>
           <button
             onClick={handleDownloadSummaryJPG}
             className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
           >
-            <Download size={16} /> Download JPG Kesimpulan
+            <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Kesimpulan</span>
           </button>
         </div>
       </div>
@@ -2752,11 +2752,11 @@ const AttendanceRecapSystem = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
               <img
                 src="https://numufidz.github.io/overlay/logo_mtsannur.png" // Ganti dengan path logo sekolah Anda
                 alt="Logo MTs. An-Nur Bululawang"
@@ -2774,7 +2774,7 @@ const AttendanceRecapSystem = () => {
                 </p>
               </div>
             </div>
-            <div className="text-right text-sm text-gray-500">
+            <div className="text-center md:text-right text-sm text-gray-500">
               <p>Powered by:</p>
               <p>Matsanuba Management Technology</p>
               <p>Version 1.0 Netlify | © 2025</p>
@@ -2857,7 +2857,7 @@ const AttendanceRecapSystem = () => {
           <div className="bg-indigo-50 rounded-xl p-6 mb-8">
             <div className="mb-6">
               <h4 className="font-medium text-gray-700 mb-3">Periode</h4>
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tanggal Awal
@@ -2884,7 +2884,7 @@ const AttendanceRecapSystem = () => {
             </div>
             <div>
               <h4 className="font-medium text-gray-700 mb-3">Generate</h4>
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <button
                   onClick={generateRecapTables}
                   disabled={attendanceData.length === 0}
@@ -2898,7 +2898,7 @@ const AttendanceRecapSystem = () => {
                   className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-green-700 disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2"
                 >
                   <Download size={20} />
-                  Download PDF Laporan Lengkap
+                  <span className="md:hidden">PDF Laporan</span><span className="hidden md:inline">Download PDF Laporan Lengkap</span>
                 </button>
               </div>
             </div>
@@ -2972,24 +2972,24 @@ const AttendanceRecapSystem = () => {
                   <h3 className="text-2xl font-bold flex items-center gap-2">
                     🏆 PERINGKAT GURU & KARYAWAN
                   </h3>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-center md:justify-end gap-2">
                     <button
                       onClick={downloadRankingAsPdf}
                       className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
                     >
-                      <Download size={16} /> Download PDF Peringkat
+                      <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Peringkat</span>
                     </button>
                     <button
                       onClick={handleCopyRanking}
                       className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
                     >
-                      <FileText size={16} /> Copy JPG Peringkat
+                      <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Peringkat</span>
                     </button>
                     <button
                       onClick={handleDownloadRankingJPG}
                       className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
                     >
-                      <Download size={16} /> Download JPG Peringkat
+                      <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Peringkat</span>
                     </button>
                   </div>
                 </div>
