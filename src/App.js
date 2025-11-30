@@ -1542,14 +1542,7 @@ const AttendanceRecapSystem = () => {
       const marginRight = 30;
       const marginBottom = 50;
 
-      // LOGIKA KHUSUS HALAMAN TABEL 3
-      // Kita batasi lebar area tabel agar ada sisa ruang 320px di kanan untuk panduan (diperbesar)
-      let effectivePageWidth = pageWidth;
-      if (i === 3) {
-        effectivePageWidth = pageWidth - 320;
-      }
-
-      const contentWidth = effectivePageWidth - marginLeft - marginRight;
+      const contentWidth = pageWidth - marginLeft - marginRight;
       const contentHeight = pageHeight - marginTop - marginBottom;
 
       const ratio = Math.min(
@@ -1599,7 +1592,20 @@ const AttendanceRecapSystem = () => {
     }
 
     // ============= HALAMAN 6: PANDUAN LENGKAP =============
-    const panduanElement = panduanRef.current;
+    // Cari elemen panduan dari ref atau dari DOM
+    let panduanElement = panduanRef.current;
+    
+    // Jika ref null, aktifkan tab guide sementara untuk memastikan elemen ter-render
+    if (!panduanElement) {
+      const originalTab = activeRecapTab;
+      setActiveRecapTab('guide');
+      // Tunggu sebentar untuk render
+      await new Promise(resolve => setTimeout(resolve, 200));
+      panduanElement = panduanRef.current;
+      // Kembalikan tab asal setelah mendapatkan elemen
+      setActiveRecapTab(originalTab);
+    }
+
     if (panduanElement) {
       doc.addPage();
 
@@ -1652,6 +1658,33 @@ const AttendanceRecapSystem = () => {
       const scaledHeight = panduanHeight * ratio;
 
       doc.addImage(panduanImg, 'JPEG', 30, 80, scaledWidth, scaledHeight);
+      
+      // Handle jika panduan terlalu panjang (multiple pages)
+      let panduanHeightLeft = scaledHeight - contentHeight;
+      while (panduanHeightLeft > 0) {
+        doc.addPage();
+        doc.setFillColor(79, 70, 229);
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('MTs. AN-NUR BULULAWANG', 40, 20);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.text('PANDUAN LENGKAP (lanjutan)', 40, 38);
+        
+        const nextPageMarginTop = 70;
+        const nextYPosition = nextPageMarginTop - (scaledHeight - panduanHeightLeft);
+        doc.addImage(
+          panduanImg,
+          'JPEG',
+          30,
+          nextYPosition,
+          scaledWidth,
+          scaledHeight
+        );
+        panduanHeightLeft -= pageHeight - nextPageMarginTop - 50;
+      }
     }
 
     // Footer semua halaman
@@ -2415,9 +2448,9 @@ const AttendanceRecapSystem = () => {
 
       // Wrap dengan div dan title
       return `
-        <div style="display: inline-block; vertical-align: top; margin-right: 30px;">
-          <h3 style="background-color: #4F46E5; color: white; padding: 10px; text-align: center; margin: 0;">${title}</h3>
-          <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <div style="margin-top: 10px; margin-bottom: 20px;">
+          <p style="color: black; padding: 8px 0; text-align: left; margin: 0; font-weight: bold; font-size: 14pt;">${title}</p>
+          <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-top: 0;">
             ${clonedTable.innerHTML}
           </table>
         </div>
@@ -2438,10 +2471,11 @@ const AttendanceRecapSystem = () => {
             body { font-family: Arial, sans-serif; }
             table { border-collapse: collapse; }
             td, th { border: 1px solid #000000; padding: 5px; }
+            p { font-size: 14pt; font-weight: bold; color: black; }
           </style>
         </head>
         <body>
-          <div style="white-space: nowrap; overflow-x: auto;">
+          <div style="margin-top: 10px;">
             ${table1HTML}
             ${table2HTML}
             ${table3HTML}
@@ -3548,14 +3582,14 @@ const AttendanceRecapSystem = () => {
                       >
                         <thead>
                           <tr className="bg-gray-300">
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               No
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               ID
                             </th>
                             <th
-                              className="border border-gray-400 px-2 py-2 text-black font-bold"
+                              className="border border-gray-400 px-2 py-3 text-black font-bold"
                               style={{ minWidth: '220px' }}
                             >
                               Nama
@@ -3566,31 +3600,31 @@ const AttendanceRecapSystem = () => {
                             {recapData.dateRange.map((date) => (
                               <th
                                 key={date}
-                                className="border border-gray-400 px-2 py-2 text-black font-bold"
+                                className="border border-gray-400 px-2 py-3 text-black font-bold"
                                 colSpan={2}
                               >
                                 {getDateLabel(date)}
                               </th>
                             ))}
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-gray-300">
                               Hari Kerja
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-blue-200">
                               Biru
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-yellow-200">
                               Kuning
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-red-200">
                               Merah
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-indigo-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-indigo-200">
                               Hadir
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-purple-200">
                               %
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-teal-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-teal-200">
                               Durasi Kerja
                             </th>
                           </tr>
@@ -3782,14 +3816,14 @@ const AttendanceRecapSystem = () => {
                       >
                         <thead>
                           <tr className="bg-gray-300">
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               No
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               ID
                             </th>
                             <th
-                              className="border border-gray-400 px-2 py-2 text-black font-bold"
+                              className="border border-gray-400 px-2 py-3 text-black font-bold"
                               style={{ minWidth: '220px' }}
                             >
                               Nama
@@ -3800,28 +3834,28 @@ const AttendanceRecapSystem = () => {
                             {recapData.dateRange.map((date) => (
                               <th
                                 key={date}
-                                className="border border-gray-400 px-2 py-2 text-black font-bold"
+                                className="border border-gray-400 px-2 py-3 text-black font-bold"
                                 colSpan={2}
                               >
                                 {getDateLabel(date)}
                               </th>
                             ))}
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-gray-300">
                               Hari Kerja
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-green-200">
                               Hijau
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-blue-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-blue-200">
                               Biru
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-yellow-200">
                               Kuning
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-red-200">
                               Merah
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-purple-200">
                               %
                             </th>
                           </tr>
@@ -4023,14 +4057,14 @@ const AttendanceRecapSystem = () => {
                       >
                         <thead>
                           <tr className="bg-gray-300">
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               No
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold">
                               ID
                             </th>
                             <th
-                              className="border border-gray-400 px-2 py-2 text-black font-bold"
+                              className="border border-gray-400 px-2 py-3 text-black font-bold"
                               style={{ minWidth: '220px' }}
                             >
                               Nama
@@ -4041,27 +4075,27 @@ const AttendanceRecapSystem = () => {
                             {recapData.dateRange.map((date) => (
                               <th
                                 key={date}
-                                className="border border-gray-400 px-2 py-2 text-black font-bold"
+                                className="border border-gray-400 px-2 py-3 text-black font-bold"
                               >
                                 {getDateLabel(date)}
                               </th>
                             ))}
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-gray-300">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-gray-300">
                               Hari Kerja
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-green-200">
                               Hadir
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-green-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-green-200">
                               Tepat
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-yellow-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-yellow-200">
                               Telat
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-red-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-red-200">
                               Alfa
                             </th>
-                            <th className="border border-gray-400 px-2 py-2 text-black font-bold bg-purple-200">
+                            <th className="border border-gray-400 px-2 py-3 text-black font-bold bg-purple-200">
                               %
                             </th>
                           </tr>
