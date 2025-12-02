@@ -17,6 +17,7 @@ const AttendanceRecapSystem = () => {
   const [recapData, setRecapData] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [rankingData, setRankingData] = useState(null);
+  const [categoryEvaluation, setCategoryEvaluation] = useState(null);
   const [startDate, setStartDate] = useState('2025-11-20');
   const [endDate, setEndDate] = useState('2025-12-05');
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
@@ -447,9 +448,23 @@ const AttendanceRecapSystem = () => {
           .slice(2) // Skip 2 baris header
           .filter((row) => row[0] && row[0] !== '') // ID harus ada
           .map((row) => {
+            // Membaca kategori dari kolom R, S, T
+            const categories = [];
+            const colR = String(row[17] || '').trim().toLowerCase(); // Pimpinan
+            const colS = String(row[18] || '').trim().toLowerCase(); // Guru
+            const colT = String(row[19] || '').trim().toLowerCase(); // Tendik
+
+            if (colR.includes('pimpinan')) categories.push('Pimpinan');
+            if (colS.includes('guru')) categories.push('Guru');
+            if (colT.includes('tendik') || colT.includes('kependidikan')) categories.push('Tendik');
+
+            // Jika tidak ada kategori sama sekali, default ke Tendik
+            if (categories.length === 0) categories.push('Tendik');
+
             return {
               id: String(row[0] || '').trim(),
               name: row[2] || '', // Kolom C = NAMA DEPAN
+              categories: categories, // Array kategori
               schedule: {
                 sabtu: { start: formatTime(row[3]) }, // Kolom D = SABTU Mulai
                 minggu: { start: formatTime(row[5]) }, // Kolom F = AHAD Mulai
@@ -712,6 +727,10 @@ const AttendanceRecapSystem = () => {
       const rankings = calculateRankings(recap, dateRange);
       setRankingData(rankings);
 
+      // Calculate category evaluation
+      const catEval = calculateCategoryEvaluation(recap, dateRange);
+      setCategoryEvaluation(catEval);
+
     } catch (error) {
       alert('Error: ' + error.message);
     }
@@ -783,6 +802,70 @@ const AttendanceRecapSystem = () => {
 
     return { topDisiplin, topTertib, topRendah };
   };
+
+  const calculateCategoryEvaluation = (recap, dateRange) => {
+    if (!recap || !dateRange || !scheduleData) return null;
+
+    const categories = {
+      Pimpinan: { totalHariKerja: 0, totalHadir: 0, totalTepat: 0, count: 0 },
+      Guru: { totalHariKerja: 0, totalHadir: 0, totalTepat: 0, count: 0 },
+      Tendik: { totalHariKerja: 0, totalHadir: 0, totalTepat: 0, count: 0 },
+    };
+
+    recap.forEach((emp) => {
+      const sched = scheduleData.find((s) => s.id === emp.id);
+      if (!sched) return;
+
+      const empCats = sched.categories || [];
+
+      empCats.forEach(category => {
+        if (categories[category]) {
+          categories[category].count++;
+
+          dateRange.forEach((dateStr) => {
+            const ev = emp.dailyEvaluation[dateStr];
+            if (ev.text !== 'L') {
+              categories[category].totalHariKerja++;
+              if (ev.text === 'H') {
+                categories[category].totalHadir++;
+                if (ev.color === '90EE90') {
+                  categories[category].totalTepat++;
+                }
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Hitung persentase
+    const result = {};
+    Object.keys(categories).forEach((cat) => {
+      const data = categories[cat];
+      result[cat] = {
+        count: data.count,
+        totalHariKerja: data.totalHariKerja,
+        totalHadir: data.totalHadir,
+        totalTepat: data.totalTepat,
+        persenKehadiran: data.totalHariKerja > 0
+          ? Math.round((data.totalHadir / data.totalHariKerja) * 100)
+          : 0,
+        persenTepat: data.totalHadir > 0
+          ? Math.round((data.totalTepat / data.totalHadir) * 100)
+          : 0,
+      };
+    });
+
+    return result;
+  };
+
+  const getPredicate = (pct) => {
+    if (pct >= 91) return 'Istimewa';
+    if (pct >= 81) return 'Baik';
+    if (pct >= 71) return 'Cukup';
+    return 'Kurang';
+  };
+
 
   const generateSummary = () => {
     if (!recapData) {
@@ -1284,7 +1367,167 @@ const AttendanceRecapSystem = () => {
     doc.setFont(undefined, 'normal');
     doc.text(rekomendasiLines, 60, textY);
 
-    // ============= HALAMAN 2: RANKING (3 KOLOM) =============
+    // ============= HALAMAN 2: EVALUASI KATEGORI =============
+    if (categoryEvaluation) {
+      doc.addPage();
+
+      // Header
+      doc.setFillColor(79, 70, 229); // Indigo - sama dengan header Peringkat
+      doc.rect(0, 0, pageWidth, 60, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont(undefined, 'bold');
+      doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
+      doc.setFontSize(14);
+      doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Periode: ${summaryData.periode}`, 40, 55);
+
+      yPos = 80;
+      doc.setTextColor(0, 0, 0);
+
+      // 1. KEHADIRAN
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('1. KEHADIRAN', 40, yPos);
+      yPos += 15;
+
+      const catWidth = (pageWidth - 100) / 3;
+      const catX = [40, 40 + catWidth + 10, 40 + 2 * (catWidth + 10)];
+      const categories = ['Pimpinan', 'Guru', 'Tendik'];
+
+      categories.forEach((cat, idx) => {
+        const data = categoryEvaluation[cat];
+        doc.setFillColor(204, 251, 241); // Teal 100 (Lebih gelap dari sebelumnya)
+        doc.roundedRect(catX[idx], yPos, catWidth, 70, 5, 5, 'F');
+
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(15, 118, 110); // Teal 700 (Lebih tua)
+        doc.text(cat, catX[idx] + 10, yPos + 15);
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Hitam pekat
+        doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
+
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(15, 118, 110); // Teal 700 (Lebih tua)
+        doc.text(`${data.persenKehadiran}%`, catX[idx] + 10, yPos + 50);
+
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Hitam pekat
+        doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 62);
+      });
+
+      yPos += 85;
+
+      // 2. KEDISIPLINAN WAKTU
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('2. KEDISIPLINAN WAKTU', 40, yPos);
+      yPos += 15;
+
+      categories.forEach((cat, idx) => {
+        const data = categoryEvaluation[cat];
+        doc.setFillColor(209, 250, 229); // Emerald 100 (Lebih gelap dari sebelumnya)
+        doc.roundedRect(catX[idx], yPos, catWidth, 70, 5, 5, 'F');
+
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(4, 120, 87); // Emerald 700 (Lebih tua)
+        doc.text(cat, catX[idx] + 10, yPos + 15);
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Hitam pekat
+        doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
+
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(4, 120, 87); // Emerald 700 (Lebih tua)
+        doc.text(`${data.persenTepat}%`, catX[idx] + 10, yPos + 50);
+
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0); // Hitam pekat
+        doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 62);
+      });
+
+      yPos += 85;
+
+      // HASIL EVALUASI
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(200, 200, 200);
+      doc.roundedRect(40, yPos, pageWidth - 80, 60, 5, 5, 'FD'); // Tinggi dikurangi jadi 60
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Hasil Evaluasi', 50, yPos + 15);
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      let evalY = yPos + 28;
+      const col2X = (pageWidth / 2) + 20; // Posisi kolom 2
+
+      // KOLOM 1: Kehadiran
+      doc.setFont(undefined, 'bold');
+      doc.text('1. Kehadiran:', 50, evalY);
+      doc.setFont(undefined, 'normal');
+
+      let leftY = evalY + 10;
+      doc.text(`• Pimpinan: ${categoryEvaluation.Pimpinan.persenKehadiran}% (${getPredicate(categoryEvaluation.Pimpinan.persenKehadiran)})`, 55, leftY);
+      leftY += 8;
+      doc.text(`• Guru: ${categoryEvaluation.Guru.persenKehadiran}% (${getPredicate(categoryEvaluation.Guru.persenKehadiran)})`, 55, leftY);
+      leftY += 8;
+      doc.text(`• Tendik: ${categoryEvaluation.Tendik.persenKehadiran}% (${getPredicate(categoryEvaluation.Tendik.persenKehadiran)})`, 55, leftY);
+
+      // KOLOM 2: Kedisiplinan Waktu
+      doc.setFont(undefined, 'bold');
+      doc.text('2. Kedisiplinan Waktu:', col2X, evalY);
+      doc.setFont(undefined, 'normal');
+
+      let rightY = evalY + 10;
+      doc.text(`• Pimpinan: ${categoryEvaluation.Pimpinan.persenTepat}% (${getPredicate(categoryEvaluation.Pimpinan.persenTepat)})`, col2X + 5, rightY);
+      rightY += 8;
+      doc.text(`• Guru: ${categoryEvaluation.Guru.persenTepat}% (${getPredicate(categoryEvaluation.Guru.persenTepat)})`, col2X + 5, rightY);
+      rightY += 8;
+      doc.text(`• Tendik: ${categoryEvaluation.Tendik.persenTepat}% (${getPredicate(categoryEvaluation.Tendik.persenTepat)})`, col2X + 5, rightY);
+
+      yPos += 75; // Space ke elemen berikutnya (Rekomendasi)
+
+      // REKOMENDASI
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(40, yPos, pageWidth - 80, 100, 5, 5, 'FD');
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Rekomendasi', 50, yPos + 15);
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      let recY = yPos + 28;
+      doc.text('1. Pimpinan: Pertahankan atau tingkatkan kehadiran', 50, recY);
+      recY += 10;
+      doc.text('2. Guru: Tingkatkan kehadiran bagi beberapa individu', 50, recY);
+      recY += 10;
+      doc.text('3. Tendik: Terapkan perbaikan dan penegasan disiplin', 50, recY);
+      recY += 15;
+      doc.setFont(undefined, 'italic');
+      doc.setFontSize(8);
+      doc.text('• Tingkatkan pemantauan waktu kedatangan dan kepulangan', 55, recY);
+      recY += 8;
+      doc.text('• Adakan pembinaan manajemen waktu', 55, recY);
+      recY += 8;
+      doc.text('• Terapkan sanksi dan penghargaan', 55, recY);
+    }
+
+    // ============= HALAMAN 3: RANKING (3 KOLOM) =============
     if (rankingData) {
       doc.addPage();
       yPos = 40;
@@ -1366,6 +1609,16 @@ const AttendanceRecapSystem = () => {
               : emp1.position;
           doc.text(displayPos, startX[0] + 24, yPos + 21);
 
+          // Hari Kerja (abu-abu)
+          doc.setTextColor(80, 80, 80);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text(
+            `${emp1.hariKerja} hr`,
+            startX[0] + colWidth - 85,
+            yPos + 17
+          );
+
           // Total (warna hijau)
           doc.setTextColor(0, 128, 0); // Hijau
           doc.setFont(undefined, 'bold');
@@ -1410,6 +1663,16 @@ const AttendanceRecapSystem = () => {
               : emp2.position;
           doc.text(displayPos, startX[1] + 24, yPos + 21);
 
+          // Hari Kerja (abu-abu)
+          doc.setTextColor(80, 80, 80);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text(
+            `${emp2.hariKerja} hr`,
+            startX[1] + colWidth - 85,
+            yPos + 17
+          );
+
           // Total (warna biru)
           doc.setTextColor(0, 0, 255); // Biru
           doc.setFont(undefined, 'bold');
@@ -1450,6 +1713,16 @@ const AttendanceRecapSystem = () => {
               : emp3.position;
           doc.text(displayPos, startX[2] + 24, yPos + 21);
 
+          // Hari Kerja (abu-abu)
+          doc.setTextColor(80, 80, 80);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text(
+            `${emp3.hariKerja} hr`,
+            startX[2] + colWidth - 85,
+            yPos + 17
+          );
+
           // Total (warna merah)
           doc.setTextColor(255, 0, 0); // Merah
           doc.setFont(undefined, 'bold');
@@ -1472,6 +1745,18 @@ const AttendanceRecapSystem = () => {
 
         yPos += rowHeight;
       }
+
+      // Keterangan perhitungan di bawah tabel peringkat
+      yPos += 10;
+      doc.setFontSize(7);
+      doc.setFont(undefined, 'italic');
+      doc.setTextColor(100, 100, 100);
+
+      const note1 = 'Keterangan: hr = Hari Kerja | Total = Jumlah hari | % = Persentase dari Hari Kerja';
+      doc.text(note1, startX[0], yPos);
+      yPos += 10;
+      const note2 = 'Contoh: 15 hr | 12 | 80% = Dari 15 hari kerja, ada 12 hari yang memenuhi kriteria (80%)';
+      doc.text(note2, startX[0], yPos);
     }
 
     // ============= HALAMAN 3-5: TABEL 1, 2, 3 =============
@@ -1543,7 +1828,7 @@ const AttendanceRecapSystem = () => {
 
       const contentWidth = pageWidth - marginLeft - marginRight;
       // Untuk tabel 3, kurangi contentHeight agar ada ruang untuk panduan
-      const guideReservedSpace = (i === 3) ? 50 : 0; // Reservasi 50pt untuk panduan tabel 3
+      const guideReservedSpace = (i === 3) ? 65 : 0; // Reservasi 65pt untuk panduan tabel 3 (lebih tinggi)
       const contentHeight = pageHeight - marginTop - marginBottom - guideReservedSpace;
 
       const ratio = Math.min(
@@ -1565,33 +1850,33 @@ const AttendanceRecapSystem = () => {
 
       // ===== PANDUAN 4 KOTAK DI BAWAH TABEL (SELALU TAMPIL) =====
       const guideY = yPosition + scaledHeight + 10; // 10pt spacing dari tabel
-      const guideBoxHeight = 35;
+      const guideBoxHeight = 50; // Lebih tinggi untuk teks yang lebih panjang
 
       let guideBoxes = [];
 
       if (i === 1) {
         // Tabel 1: Rekap Mesin
         guideBoxes = [
-          { label: 'BIRU', desc: 'Scan Lengkap', color: [173, 216, 230] },
-          { label: 'KUNING', desc: 'Scan Sebagian', color: [255, 255, 153] },
-          { label: 'MERAH', desc: 'Tidak Scan', color: [255, 182, 193] },
-          { label: 'PUTIH + L', desc: 'Libur/OFF', color: [245, 245, 245] },
+          { label: 'BIRU', desc: 'Scan MASUK dan PULANG keduanya tercatat', color: [173, 216, 230] },
+          { label: 'KUNING', desc: 'Hanya scan MASUK saja atau PULANG saja', color: [255, 255, 153] },
+          { label: 'MERAH', desc: 'Tidak ada scan MASUK maupun PULANG (Alpha)', color: [255, 179, 179] },
+          { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
         ];
       } else if (i === 2) {
         // Tabel 2: Kedisiplinan Waktu
         guideBoxes = [
-          { label: 'HIJAU', desc: 'Tepat Waktu', color: [144, 238, 144] },
-          { label: 'KUNING', desc: 'Terlambat', color: [255, 255, 153] },
-          { label: 'MERAH', desc: 'Alpha', color: [255, 182, 193] },
-          { label: 'PUTIH + L', desc: 'Libur/OFF', color: [245, 245, 245] },
+          { label: 'HIJAU', desc: 'Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', color: [144, 238, 144] },
+          { label: 'KUNING', desc: 'Datang SETELAH jadwal (Terlambat)', color: [255, 255, 153] },
+          { label: 'MERAH', desc: 'Tidak scan sama sekali (Alpha)', color: [255, 179, 179] },
+          { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
         ];
       } else if (i === 3) {
         // Tabel 3: Evaluasi Kehadiran
         guideBoxes = [
-          { label: 'H', desc: 'Hadir', color: [144, 238, 144] },
-          { label: 'T', desc: 'Terlambat', color: [255, 255, 153] },
-          { label: 'A', desc: 'Alpha', color: [255, 182, 193] },
-          { label: 'L', desc: 'Libur', color: [245, 245, 245] },
+          { label: 'H', desc: 'Karyawan hadir (ada scan masuk)', color: [144, 238, 144] },
+          { label: 'T', desc: 'Hadir tapi datang setelah jadwal', color: [255, 255, 153] },
+          { label: 'A', desc: 'Tidak hadir (tidak ada scan)', color: [255, 179, 179] },
+          { label: 'L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
         ];
       }
 
@@ -1603,14 +1888,16 @@ const AttendanceRecapSystem = () => {
         doc.setFillColor(...box.color);
         doc.roundedRect(xPos, guideY, guideBoxWidth, guideBoxHeight, 3, 3, 'F');
 
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text(box.label, xPos + 10, guideY + 13);
+        doc.text(box.label, xPos + 10, guideY + 15);
 
-        doc.setFontSize(7);
+        doc.setFontSize(6);
         doc.setFont(undefined, 'normal');
-        doc.text(box.desc, xPos + 10, guideY + 25);
+        // Split teks panjang menjadi beberapa baris
+        const descLines = doc.splitTextToSize(box.desc, guideBoxWidth - 20);
+        doc.text(descLines, xPos + 10, guideY + 28);
       });
 
       // Logika untuk handling tabel panjang (paging)
@@ -1776,7 +2063,7 @@ const AttendanceRecapSystem = () => {
     yPos += 60;
 
     // ===== KOLOM 1: ITEM 3 - MERAH =====
-    doc.setFillColor(255, 182, 193); // Light Red
+    doc.setFillColor(255, 179, 179); // Light Red - sesuai dengan tabel
     doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
@@ -1789,7 +2076,7 @@ const AttendanceRecapSystem = () => {
     doc.text(merah1, startX[0] + 10, yPos + 28);
 
     // ===== KOLOM 2: ITEM 3 - MERAH =====
-    doc.setFillColor(255, 182, 193);
+    doc.setFillColor(255, 179, 179);
     doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
@@ -1802,7 +2089,7 @@ const AttendanceRecapSystem = () => {
     doc.text(merah2, startX[1] + 10, yPos + 28);
 
     // ===== KOLOM 3: ITEM 3 - A =====
-    doc.setFillColor(255, 182, 193);
+    doc.setFillColor(255, 179, 179);
     doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
@@ -1817,8 +2104,9 @@ const AttendanceRecapSystem = () => {
     yPos += 60;
 
     // ===== KOLOM 1: ITEM 4 - PUTIH L =====
-    doc.setFillColor(245, 245, 245); // Light Gray
-    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFillColor(255, 255, 255); // White - sesuai dengan tabel
+    doc.setDrawColor(200, 200, 200); // Border abu-abu agar terlihat
+    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'FD');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.setTextColor(105, 105, 105);
@@ -1830,8 +2118,8 @@ const AttendanceRecapSystem = () => {
     doc.text(putih1, startX[0] + 10, yPos + 28);
 
     // ===== KOLOM 2: ITEM 4 - PUTIH L =====
-    doc.setFillColor(245, 245, 245);
-    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'FD');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.setTextColor(105, 105, 105);
@@ -1843,8 +2131,8 @@ const AttendanceRecapSystem = () => {
     doc.text(putih2, startX[1] + 10, yPos + 28);
 
     // ===== KOLOM 3: ITEM 4 - L =====
-    doc.setFillColor(245, 245, 245);
-    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'FD');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.setTextColor(105, 105, 105);
@@ -3105,13 +3393,22 @@ const AttendanceRecapSystem = () => {
                 1. Profil Absensi
               </button>
               <button
+                onClick={() => setActiveRecapTab('category')}
+                className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'category'
+                  ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
+              >
+                2. Evaluasi Kategori
+              </button>
+              <button
                 onClick={() => setActiveRecapTab('ranking')}
                 className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${activeRecapTab === 'ranking'
                   ? 'text-yellow-600 border-b-2 border-yellow-600 bg-yellow-50'
                   : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
-                2. Peringkat
+                3. Peringkat
               </button>
               <button
                 onClick={() => setActiveRecapTab('table1')}
@@ -3120,7 +3417,7 @@ const AttendanceRecapSystem = () => {
                   : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
-                3. Rekap Mesin
+                4. Rekap Mesin
               </button>
               <button
                 onClick={() => setActiveRecapTab('table2')}
@@ -3129,7 +3426,7 @@ const AttendanceRecapSystem = () => {
                   : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
-                4. Kedisiplinan
+                5. Kedisiplinan
               </button>
               <button
                 onClick={() => setActiveRecapTab('table3')}
@@ -3138,7 +3435,7 @@ const AttendanceRecapSystem = () => {
                   : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
-                5. Evaluasi
+                6. Evaluasi
               </button>
               <button
                 onClick={() => setActiveRecapTab('guide')}
@@ -3147,12 +3444,103 @@ const AttendanceRecapSystem = () => {
                   : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
-                6. Panduan
+                7. Panduan
               </button>
             </div>
           )}
           <div className="space-y-8">
             {activeRecapTab === 'summary' && renderSummary()}
+            {activeRecapTab === 'category' && categoryEvaluation && (
+              <div className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-teal-200 to-cyan-200">
+                <h2 className="text-3xl font-bold mb-6 text-teal-900">Evaluasi Berdasarkan Kategori</h2>
+
+                {/* Komponen Evaluasi */}
+                <div className="space-y-6 mb-8">
+                  <h3 className="text-xl font-bold text-teal-800">1. Kehadiran</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
+                      <div key={cat} className="bg-white p-6 rounded-lg shadow">
+                        <h4 className="font-bold text-lg mb-2 text-gray-800">{cat}</h4>
+                        <p className="text-sm text-gray-600">Jumlah: {categoryEvaluation[cat].count} orang</p>
+                        <p className="text-3xl font-bold text-teal-800 mt-2">
+                          {categoryEvaluation[cat].persenKehadiran}%
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {categoryEvaluation[cat].totalHadir} dari {categoryEvaluation[cat].totalHariKerja} hari kerja
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6 mb-8">
+                  <h3 className="text-xl font-bold text-teal-800">2. Kedisiplinan Waktu</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
+                      <div key={cat} className="bg-white p-6 rounded-lg shadow">
+                        <h4 className="font-bold text-lg mb-2 text-gray-800">{cat}</h4>
+                        <p className="text-sm text-gray-600">Tepat Waktu</p>
+                        <p className="text-3xl font-bold text-green-800 mt-2">
+                          {categoryEvaluation[cat].persenTepat}%
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {categoryEvaluation[cat].totalTepat} dari {categoryEvaluation[cat].totalHadir} hari hadir
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hasil Evaluasi */}
+                <div className="bg-white p-6 rounded-lg shadow mb-6">
+                  <h3 className="text-xl font-bold mb-4 text-teal-700">Hasil Evaluasi</h3>
+                  <div className="space-y-4 text-gray-700">
+                    <div>
+                      <h4 className="font-bold text-teal-800 mb-2">1. Kehadiran</h4>
+                      <ul className="list-disc list-inside space-y-1 pl-2">
+                        <li><strong>Pimpinan:</strong> {categoryEvaluation.Pimpinan.persenKehadiran}% ({getPredicate(categoryEvaluation.Pimpinan.persenKehadiran)})</li>
+                        <li><strong>Guru:</strong> {categoryEvaluation.Guru.persenKehadiran}% ({getPredicate(categoryEvaluation.Guru.persenKehadiran)})</li>
+                        <li><strong>Tenaga Kependidikan:</strong> {categoryEvaluation.Tendik.persenKehadiran}% ({getPredicate(categoryEvaluation.Tendik.persenKehadiran)})</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-teal-800 mb-2">2. Kedisiplinan Waktu</h4>
+                      <ul className="list-disc list-inside space-y-1 pl-2">
+                        <li><strong>Pimpinan:</strong> {categoryEvaluation.Pimpinan.persenTepat}% ({getPredicate(categoryEvaluation.Pimpinan.persenTepat)})</li>
+                        <li><strong>Guru:</strong> {categoryEvaluation.Guru.persenTepat}% ({getPredicate(categoryEvaluation.Guru.persenTepat)})</li>
+                        <li><strong>Tenaga Kependidikan:</strong> {categoryEvaluation.Tendik.persenTepat}% ({getPredicate(categoryEvaluation.Tendik.persenTepat)})</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rekomendasi */}
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-xl font-bold mb-4 text-teal-700">Rekomendasi</h3>
+                  <div className="space-y-4 text-gray-700">
+                    <div>
+                      <h4 className="font-bold">1. Pimpinan</h4>
+                      <p className="text-sm">Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold">2. Guru</h4>
+                      <p className="text-sm">Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold">3. Tenaga Kependidikan</h4>
+                      <p className="text-sm">Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.</p>
+                    </div>
+                    <div className="mt-4 pl-4 border-l-4 border-teal-500">
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li>Meningkatkan pemantauan waktu kedatangan dan kepulangan</li>
+                        <li>Mengadakan pembinaan manajemen waktu</li>
+                        <li>Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {activeRecapTab === 'ranking' && rankingData && (
               <div
                 ref={rankingRef}
