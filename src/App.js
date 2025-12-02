@@ -1042,78 +1042,53 @@ const AttendanceRecapSystem = () => {
     yPos = headerHeight + 20;
     doc.setTextColor(0, 0, 0);
 
-    // 1 BARIS 3 KONTAINER: Predikat, Total Karyawan, Total Hari Kerja
-    const containerWidth = (pageWidth - 120) / 3;
-    const containerHeight = 80;
+    // 4 KOTAK INFORMASI UTAMA (1 BARIS)
+    const summaryBoxes = [
+      {
+        label: 'Predikat',
+        value: summaryData.predikat,
+        color: [240, 240, 255],
+        fontSize: 16, // Lebih kecil dari sebelumnya (20)
+      },
+      {
+        label: 'Total Guru & Karyawan',
+        value: `${summaryData.totalKaryawan} orang`,
+        color: [230, 230, 240],
+        fontSize: 18,
+      },
+      {
+        label: 'Total Hari Kerja',
+        value: `${summaryData.totalHariKerja} hari`,
+        color: [230, 230, 240],
+        fontSize: 18,
+      },
+      {
+        label: 'Tingkat Kehadiran',
+        value: `${summaryData.persentaseKehadiran}%`,
+        color: [220, 220, 240],
+        fontSize: 18,
+      },
+    ];
 
-    // Container 1: Predikat
-    doc.setFillColor(240, 240, 255);
-    doc.roundedRect(40, yPos, containerWidth, containerHeight, 5, 5, 'F');
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.text('Predikat', 60, yPos + 25);
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text(summaryData.predikat, 60, yPos + 50);
+    const summarySpacing = 15;
+    const summaryBoxWidth = (pageWidth - 80 - (3 * summarySpacing)) / 4;
+    const summaryBoxHeight = 70;
 
-    // Container 2: Total Karyawan
-    doc.setFillColor(230, 230, 240);
-    doc.roundedRect(
-      40 + containerWidth + 20,
-      yPos,
-      containerWidth,
-      containerHeight,
-      5,
-      5,
-      'F'
-    );
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.text('Total Guru & Karyawan', 60 + containerWidth + 20, yPos + 25);
-    doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
-    doc.text(
-      `${summaryData.totalKaryawan} orang`,
-      60 + containerWidth + 20,
-      yPos + 50
-    );
+    summaryBoxes.forEach((box, idx) => {
+      const xPos = 40 + idx * (summaryBoxWidth + summarySpacing);
+      doc.setFillColor(...box.color);
+      doc.roundedRect(xPos, yPos, summaryBoxWidth, summaryBoxHeight, 5, 5, 'F');
 
-    // Container 3: Total Hari Kerja
-    doc.setFillColor(230, 230, 240);
-    doc.roundedRect(
-      40 + (containerWidth + 20) * 2,
-      yPos,
-      containerWidth,
-      containerHeight,
-      5,
-      5,
-      'F'
-    );
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.text('Total Hari Kerja', 60 + (containerWidth + 20) * 2, yPos + 25);
-    doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
-    doc.text(
-      `${summaryData.totalHariKerja} hari`,
-      60 + (containerWidth + 20) * 2,
-      yPos + 50
-    );
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text(box.label, xPos + 15, yPos + 25);
 
-    yPos += containerHeight + 20;
+      doc.setFontSize(box.fontSize);
+      doc.setFont(undefined, 'bold');
+      doc.text(box.value, xPos + 15, yPos + 50);
+    });
 
-    // Tingkat Kehadiran (tambahan info)
-    doc.setFillColor(220, 220, 240);
-    doc.roundedRect(40, yPos, pageWidth - 80, 30, 5, 5, 'F');
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text(
-      `Tingkat Kehadiran: ${summaryData.persentaseKehadiran}%`,
-      60,
-      yPos + 20
-    );
-
-    yPos += 50;
+    yPos += summaryBoxHeight + 30;
 
     // Rincian Kehadiran Header
     doc.setFontSize(14);
@@ -1147,12 +1122,13 @@ const AttendanceRecapSystem = () => {
       },
     ];
 
-    // 4 box dengan ukuran sama dan simetris
-    const detailBoxWidth = (pageWidth - 120) / 4;
+    // 4 box dalam 1 baris, lebar sama dan simetris (Full Justified)
+    const detailSpacing = 15; // Spacing antar box
+    const detailBoxWidth = (pageWidth - 80 - (3 * detailSpacing)) / 4;
     const detailBoxHeight = 60;
 
     details.forEach((detail, idx) => {
-      const xPos = 40 + idx * (detailBoxWidth + 10);
+      const xPos = 40 + idx * (detailBoxWidth + detailSpacing);
       doc.setFillColor(...detail.color);
       doc.roundedRect(xPos, yPos, detailBoxWidth, detailBoxHeight, 5, 5, 'F');
 
@@ -1165,158 +1141,148 @@ const AttendanceRecapSystem = () => {
       doc.text(detail.value, xPos + 15, yPos + 45);
     });
 
-    yPos += detailBoxHeight + 20;
+    yPos += detailBoxHeight + 30;
 
-    // Naikkan posisi container 0.5 cm (≈ 14 pt)
-    yPos -= 8;
+    // ============= DESKRIPSI KESIMPULAN (DYNAMIC HEIGHT) =============
 
-    // ============= DESKRIPSI KESIMPULAN DENGAN CONTAINER =============
+    // 1. Hitung dulu semua teks untuk menentukan tinggi kotak
+    const contentWidth = pageWidth - 120; // Lebar area teks (margin kiri 60, kanan 60)
+
+    // Paragraf Pembuka
+    const introText = `Profil absensi periode ${summaryData.periode} menunjukkan tingkat kehadiran ${summaryData.persentaseKehadiran}% yang termasuk kategori ${summaryData.predikat}.`;
+    const introLines = doc.splitTextToSize(introText, contentWidth);
+
+    // Analisis Kehadiran
+    let analisisText = '';
+    if (summaryData.persentaseKehadiran >= 96) {
+      analisisText = 'Tingkat kehadiran sangat luar biasa dengan konsistensi kehadiran hampir sempurna.';
+    } else if (summaryData.persentaseKehadiran >= 91) {
+      analisisText = 'Tingkat kehadiran sangat memuaskan dengan komitmen tinggi dari guru & karyawan.';
+    } else if (summaryData.persentaseKehadiran >= 86) {
+      analisisText = 'Tingkat kehadiran baik dan menunjukkan dedikasi yang konsisten.';
+    } else if (summaryData.persentaseKehadiran >= 81) {
+      analisisText = 'Tingkat kehadiran cukup baik namun masih ada ruang perbaikan.';
+    } else if (summaryData.persentaseKehadiran >= 76) {
+      analisisText = 'Tingkat kehadiran di bawah standar dengan cukup banyak ketidakhadiran.';
+    } else {
+      analisisText = 'Tingkat kehadiran di bawah standar minimal dengan banyak ketidakhadiran tanpa keterangan jelas.';
+    }
+    const analisisLines = doc.splitTextToSize(analisisText, contentWidth);
+
+    // Kesadaran Absensi
+    let kesadaranText = '';
+    if (summaryData.persentaseKehadiran >= 96) {
+      kesadaranText = 'Ketertiban scan masuk-pulang sangat sempurna. Hampir semua guru & karyawan konsisten melakukan scan lengkap.';
+    } else if (summaryData.persentaseKehadiran >= 91) {
+      kesadaranText = 'Ketertiban scan masuk-pulang sangat baik. Mayoritas konsisten melakukan scan lengkap setiap hari.';
+    } else if (summaryData.persentaseKehadiran >= 86) {
+      kesadaranText = 'Ketertiban scan masuk-pulang baik. Sebagian besar melakukan scan dengan tertib.';
+    } else if (summaryData.persentaseKehadiran >= 81) {
+      kesadaranText = 'Ketertiban perlu ditingkatkan. Masih ditemukan kasus lupa scan pulang atau tidak scan sama sekali.';
+    } else if (summaryData.persentaseKehadiran >= 76) {
+      kesadaranText = 'Ketertiban scan masuk-pulang kurang. Cukup banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap.';
+    } else {
+      kesadaranText = 'Ketertiban scan masuk-pulang rendah. Banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap, menunjukkan kurangnya kesadaran administrasi.';
+    }
+    const kesadaranLines = doc.splitTextToSize(kesadaranText, contentWidth);
+
+    // Kedisiplinan Waktu
+    let kedisiplinanText = '';
+    if (summaryData.persentaseKehadiran >= 96) {
+      kedisiplinanText = 'Ketepatan waktu sangat sempurna. Hampir semua datang sebelum jadwal yang ditentukan.';
+    } else if (summaryData.persentaseKehadiran >= 91) {
+      kedisiplinanText = 'Ketepatan waktu sangat baik. Sebagian besar datang sebelum atau tepat jadwal yang ditentukan.';
+    } else if (summaryData.persentaseKehadiran >= 86) {
+      kedisiplinanText = 'Ketepatan waktu baik. Mayoritas guru & karyawan datang tepat waktu sesuai jadwal.';
+    } else if (summaryData.persentaseKehadiran >= 81) {
+      kedisiplinanText = 'Ketepatan waktu bervariasi. Sebagian disiplin namun masih ada yang sering terlambat.';
+    } else if (summaryData.persentaseKehadiran >= 76) {
+      kedisiplinanText = 'Ketepatan waktu kurang. Cukup banyak guru & karyawan datang terlambat dari jadwal.';
+    } else {
+      kedisiplinanText = 'Ketepatan waktu rendah. Banyak guru & karyawan datang terlambat setelah jadwal dimulai.';
+    }
+    const kedisiplinanLines = doc.splitTextToSize(kedisiplinanText, contentWidth);
+
+    // Rekomendasi/Apresiasi
+    const rekomendasiLabel = summaryData.persentaseKehadiran >= 91 ? 'Apresiasi:' : 'Rekomendasi:';
+    let rekomendasiText = '';
+    if (summaryData.persentaseKehadiran >= 96) {
+      rekomendasiText = 'Prestasi luar biasa! Pertahankan kedisiplinan sempurna ini dan jadilah teladan bagi yang lain.';
+    } else if (summaryData.persentaseKehadiran >= 91) {
+      rekomendasiText = 'Prestasi sangat baik! Pertahankan disiplin ini dan tingkatkan menuju level UNGGUL.';
+    } else if (summaryData.persentaseKehadiran >= 86) {
+      rekomendasiText = 'Performa baik, pertahankan dan tingkatkan konsistensi untuk mencapai kategori BAIK SEKALI.';
+    } else if (summaryData.persentaseKehadiran >= 81) {
+      rekomendasiText = 'Disarankan reminder rutin dan evaluasi berkala untuk mencapai kategori BAIK atau BAIK SEKALI.';
+    } else if (summaryData.persentaseKehadiran >= 76) {
+      rekomendasiText = 'Perlu pembinaan dan monitoring ketat untuk perbaikan kedisiplinan secara bertahap.';
+    } else {
+      rekomendasiText = 'Perlu evaluasi individual, pembinaan intensif, dan penerapan sanksi tegas untuk perbaikan kedisiplinan.';
+    }
+    const rekomendasiLines = doc.splitTextToSize(rekomendasiText, contentWidth);
+
+    // Hitung total tinggi yang dibutuhkan
+    // Header (20) + Intro (lines*12 + 10) + 4 section * (Title 12 + lines*12 + 8) + Padding Bottom (20)
+    let totalBoxHeight = 20 + (introLines.length * 12 + 10) + 20; // Base padding
+    totalBoxHeight += 12 + analisisLines.length * 12 + 8;
+    totalBoxHeight += 12 + kesadaranLines.length * 12 + 8;
+    totalBoxHeight += 12 + kedisiplinanLines.length * 12 + 8;
+    totalBoxHeight += 12 + rekomendasiLines.length * 12;
+
+    // Gambar Kotak Background
     doc.setFillColor(245, 245, 250);
     doc.setDrawColor(200, 200, 220);
     doc.setLineWidth(1.5);
-    doc.roundedRect(40, yPos, pageWidth - 80, 200, 5, 5, 'FD');
+    doc.roundedRect(40, yPos, pageWidth - 80, totalBoxHeight, 5, 5, 'FD');
+
+    // Render Teks
+    let textY = yPos + 25;
 
     // Judul
-    yPos += 20;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(79, 70, 229);
-    doc.text('Deskripsi Kesimpulan Profil Absensi', 60, yPos);
+    doc.text('Deskripsi Kesimpulan Profil Absensi', 60, textY);
+    textY += 20;
 
-    // Isi awal deskripsi
-    yPos += 20;
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
 
-    // Paragraf Pembuka
-    const introText = `Profil absensi periode ${summaryData.periode} menunjukkan tingkat kehadiran ${summaryData.persentaseKehadiran}% yang termasuk kategori ${summaryData.predikat}.`;
-    const introLines = doc.splitTextToSize(introText, pageWidth - 120);
-    doc.text(introLines, 60, yPos);
-    yPos += introLines.length * 12 + 10;
+    // Intro
+    doc.text(introLines, 60, textY);
+    textY += introLines.length * 12 + 10;
 
-    // Analisis Kehadiran
+    // Analisis
     doc.setFont(undefined, 'bold');
-    doc.text('Analisis Kehadiran:', 60, yPos);
+    doc.text('Analisis Kehadiran:', 60, textY);
+    textY += 12;
     doc.setFont(undefined, 'normal');
-    yPos += 12;
-    let analisisText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      analisisText =
-        'Tingkat kehadiran sangat luar biasa dengan konsistensi kehadiran hampir sempurna.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      analisisText =
-        'Tingkat kehadiran sangat memuaskan dengan komitmen tinggi dari guru & karyawan.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      analisisText =
-        'Tingkat kehadiran baik dan menunjukkan dedikasi yang konsisten.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      analisisText =
-        'Tingkat kehadiran cukup baik namun masih ada ruang perbaikan.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      analisisText =
-        'Tingkat kehadiran di bawah standar dengan cukup banyak ketidakhadiran.';
-    } else {
-      analisisText =
-        'Tingkat kehadiran di bawah standar minimal dengan banyak ketidakhadiran tanpa keterangan jelas.';
-    }
-    const analisisLines = doc.splitTextToSize(analisisText, pageWidth - 120);
-    doc.text(analisisLines, 60, yPos);
-    yPos += analisisLines.length * 12 + 8;
+    doc.text(analisisLines, 60, textY);
+    textY += analisisLines.length * 12 + 8;
 
-    // Kesadaran Absensi
+    // Kesadaran
     doc.setFont(undefined, 'bold');
-    doc.text('Kesadaran Absensi:', 60, yPos);
+    doc.text('Kesadaran Absensi:', 60, textY);
+    textY += 12;
     doc.setFont(undefined, 'normal');
-    yPos += 12;
-    let kesadaranText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      kesadaranText =
-        'Ketertiban scan masuk-pulang sangat sempurna. Hampir semua guru & karyawan konsisten melakukan scan lengkap.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      kesadaranText =
-        'Ketertiban scan masuk-pulang sangat baik. Mayoritas konsisten melakukan scan lengkap setiap hari.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      kesadaranText =
-        'Ketertiban scan masuk-pulang baik. Sebagian besar melakukan scan dengan tertib.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      kesadaranText =
-        'Ketertiban perlu ditingkatkan. Masih ditemukan kasus lupa scan pulang atau tidak scan sama sekali.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      kesadaranText =
-        'Ketertiban scan masuk-pulang kurang. Cukup banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap.';
-    } else {
-      kesadaranText =
-        'Ketertiban scan masuk-pulang rendah. Banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap, menunjukkan kurangnya kesadaran administrasi.';
-    }
-    const kesadaranLines = doc.splitTextToSize(kesadaranText, pageWidth - 120);
-    doc.text(kesadaranLines, 60, yPos);
-    yPos += kesadaranLines.length * 12 + 8;
+    doc.text(kesadaranLines, 60, textY);
+    textY += kesadaranLines.length * 12 + 8;
 
-    // Kedisiplinan Waktu
+    // Kedisiplinan
     doc.setFont(undefined, 'bold');
-    doc.text('Kedisiplinan Waktu:', 60, yPos);
+    doc.text('Kedisiplinan Waktu:', 60, textY);
+    textY += 12;
     doc.setFont(undefined, 'normal');
-    yPos += 12;
-    let kedisiplinanText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      kedisiplinanText =
-        'Ketepatan waktu sangat sempurna. Hampir semua datang sebelum jadwal yang ditentukan.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      kedisiplinanText =
-        'Ketepatan waktu sangat baik. Sebagian besar datang sebelum atau tepat jadwal yang ditentukan.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      kedisiplinanText =
-        'Ketepatan waktu baik. Mayoritas guru & karyawan datang tepat waktu sesuai jadwal.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      kedisiplinanText =
-        'Ketepatan waktu bervariasi. Sebagian disiplin namun masih ada yang sering terlambat.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      kedisiplinanText =
-        'Ketepatan waktu kurang. Cukup banyak guru & karyawan datang terlambat dari jadwal.';
-    } else {
-      kedisiplinanText =
-        'Ketepatan waktu rendah. Banyak guru & karyawan datang terlambat setelah jadwal dimulai.';
-    }
-    const kedisiplinanLines = doc.splitTextToSize(
-      kedisiplinanText,
-      pageWidth - 120
-    );
-    doc.text(kedisiplinanLines, 60, yPos);
-    yPos += kedisiplinanLines.length * 12 + 8;
+    doc.text(kedisiplinanLines, 60, textY);
+    textY += kedisiplinanLines.length * 12 + 8;
 
-    // Rekomendasi/Apresiasi
+    // Rekomendasi
     doc.setFont(undefined, 'bold');
-    const rekomendasiLabel =
-      summaryData.persentaseKehadiran >= 91 ? 'Apresiasi:' : 'Rekomendasi:';
-    doc.text(rekomendasiLabel, 60, yPos);
+    doc.text(rekomendasiLabel, 60, textY);
+    textY += 12;
     doc.setFont(undefined, 'normal');
-    yPos += 12;
-    let rekomendasiText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      rekomendasiText =
-        'Prestasi luar biasa! Pertahankan kedisiplinan sempurna ini dan jadilah teladan bagi yang lain.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      rekomendasiText =
-        'Prestasi sangat baik! Pertahankan disiplin ini dan tingkatkan menuju level UNGGUL.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      rekomendasiText =
-        'Performa baik, pertahankan dan tingkatkan konsistensi untuk mencapai kategori BAIK SEKALI.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      rekomendasiText =
-        'Disarankan reminder rutin dan evaluasi berkala untuk mencapai kategori BAIK atau BAIK SEKALI.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      rekomendasiText =
-        'Perlu pembinaan dan monitoring ketat untuk perbaikan kedisiplinan secara bertahap.';
-    } else {
-      rekomendasiText =
-        'Perlu evaluasi individual, pembinaan intensif, dan penerapan sanksi tegas untuk perbaikan kedisiplinan.';
-    }
-    const rekomendasiLines = doc.splitTextToSize(
-      rekomendasiText,
-      pageWidth - 120
-    );
-    doc.text(rekomendasiLines, 60, yPos);
+    doc.text(rekomendasiLines, 60, textY);
 
     // ============= HALAMAN 2: RANKING (3 KOLOM) =============
     if (rankingData) {
@@ -1399,8 +1365,19 @@ const AttendanceRecapSystem = () => {
               ? emp1.position.substring(0, maxPosLength - 3) + '...'
               : emp1.position;
           doc.text(displayPos, startX[0] + 24, yPos + 21);
-          doc.setTextColor(0, 0, 0);
+
+          // Total (warna hijau)
+          doc.setTextColor(0, 128, 0); // Hijau
           doc.setFont(undefined, 'bold');
+          doc.setFontSize(10);
+          doc.text(
+            `${emp1.hijau}`,
+            startX[0] + colWidth - 60,
+            yPos + 17
+          );
+
+          // Persentase (warna hitam)
+          doc.setTextColor(0, 0, 0);
           doc.setFontSize(11);
           doc.text(
             `${emp1.persenHijau}%`,
@@ -1432,8 +1409,19 @@ const AttendanceRecapSystem = () => {
               ? emp2.position.substring(0, maxPosLength - 3) + '...'
               : emp2.position;
           doc.text(displayPos, startX[1] + 24, yPos + 21);
-          doc.setTextColor(0, 0, 0);
+
+          // Total (warna biru)
+          doc.setTextColor(0, 0, 255); // Biru
           doc.setFont(undefined, 'bold');
+          doc.setFontSize(10);
+          doc.text(
+            `${emp2.biru}`,
+            startX[1] + colWidth - 60,
+            yPos + 17
+          );
+
+          // Persentase (warna hitam)
+          doc.setTextColor(0, 0, 0);
           doc.setFontSize(11);
           doc.text(`${emp2.persenBiru}%`, startX[1] + colWidth - 35, yPos + 17);
         }
@@ -1461,8 +1449,19 @@ const AttendanceRecapSystem = () => {
               ? emp3.position.substring(0, maxPosLength - 3) + '...'
               : emp3.position;
           doc.text(displayPos, startX[2] + 24, yPos + 21);
-          doc.setTextColor(0, 0, 0);
+
+          // Total (warna merah)
+          doc.setTextColor(255, 0, 0); // Merah
           doc.setFont(undefined, 'bold');
+          doc.setFontSize(10);
+          doc.text(
+            `${emp3.merah}`,
+            startX[2] + colWidth - 60,
+            yPos + 17
+          );
+
+          // Persentase (warna hitam)
+          doc.setTextColor(0, 0, 0);
           doc.setFontSize(11);
           doc.text(
             `${emp3.persenMerah}%`,
@@ -1543,7 +1542,9 @@ const AttendanceRecapSystem = () => {
       const marginBottom = 50;
 
       const contentWidth = pageWidth - marginLeft - marginRight;
-      const contentHeight = pageHeight - marginTop - marginBottom;
+      // Untuk tabel 3, kurangi contentHeight agar ada ruang untuk panduan
+      const guideReservedSpace = (i === 3) ? 50 : 0; // Reservasi 50pt untuk panduan tabel 3
+      const contentHeight = pageHeight - marginTop - marginBottom - guideReservedSpace;
 
       const ratio = Math.min(
         contentWidth / imgWidth,
@@ -1561,6 +1562,56 @@ const AttendanceRecapSystem = () => {
         scaledWidth,
         scaledHeight
       );
+
+      // ===== PANDUAN 4 KOTAK DI BAWAH TABEL (SELALU TAMPIL) =====
+      const guideY = yPosition + scaledHeight + 10; // 10pt spacing dari tabel
+      const guideBoxHeight = 35;
+
+      let guideBoxes = [];
+
+      if (i === 1) {
+        // Tabel 1: Rekap Mesin
+        guideBoxes = [
+          { label: 'BIRU', desc: 'Scan Lengkap', color: [173, 216, 230] },
+          { label: 'KUNING', desc: 'Scan Sebagian', color: [255, 255, 153] },
+          { label: 'MERAH', desc: 'Tidak Scan', color: [255, 182, 193] },
+          { label: 'PUTIH + L', desc: 'Libur/OFF', color: [245, 245, 245] },
+        ];
+      } else if (i === 2) {
+        // Tabel 2: Kedisiplinan Waktu
+        guideBoxes = [
+          { label: 'HIJAU', desc: 'Tepat Waktu', color: [144, 238, 144] },
+          { label: 'KUNING', desc: 'Terlambat', color: [255, 255, 153] },
+          { label: 'MERAH', desc: 'Alpha', color: [255, 182, 193] },
+          { label: 'PUTIH + L', desc: 'Libur/OFF', color: [245, 245, 245] },
+        ];
+      } else if (i === 3) {
+        // Tabel 3: Evaluasi Kehadiran
+        guideBoxes = [
+          { label: 'H', desc: 'Hadir', color: [144, 238, 144] },
+          { label: 'T', desc: 'Terlambat', color: [255, 255, 153] },
+          { label: 'A', desc: 'Alpha', color: [255, 182, 193] },
+          { label: 'L', desc: 'Libur', color: [245, 245, 245] },
+        ];
+      }
+
+      const guideSpacing = 10;
+      const guideBoxWidth = (pageWidth - 80 - (3 * guideSpacing)) / 4;
+
+      guideBoxes.forEach((box, idx) => {
+        const xPos = 40 + idx * (guideBoxWidth + guideSpacing);
+        doc.setFillColor(...box.color);
+        doc.roundedRect(xPos, guideY, guideBoxWidth, guideBoxHeight, 3, 3, 'F');
+
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text(box.label, xPos + 10, guideY + 13);
+
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'normal');
+        doc.text(box.desc, xPos + 10, guideY + 25);
+      });
 
       // Logika untuk handling tabel panjang (paging)
       let heightLeft = scaledHeight - contentHeight;
@@ -1591,101 +1642,240 @@ const AttendanceRecapSystem = () => {
       }
     }
 
-    // ============= HALAMAN 6: PANDUAN LENGKAP =============
-    // Cari elemen panduan dari ref atau dari DOM
-    let panduanElement = panduanRef.current;
+    // ============= HALAMAN 6: PANDUAN LENGKAP (3 KOLOM) =============
+    doc.addPage();
 
-    // Jika ref null, aktifkan tab guide sementara untuk memastikan elemen ter-render
-    if (!panduanElement) {
-      const originalTab = activeRecapTab;
-      setActiveRecapTab('guide');
-      // Tunggu sebentar untuk render
-      await new Promise(resolve => setTimeout(resolve, 200));
-      panduanElement = panduanRef.current;
-      // Kembalikan tab asal setelah mendapatkan elemen
-      setActiveRecapTab(originalTab);
-    }
+    // Header Halaman Panduan
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, pageWidth, 60, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('PANDUAN LENGKAP 3 TABEL REKAP', 40, 25);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text('MTs. AN-NUR BULULAWANG', 40, 45);
 
-    if (panduanElement) {
-      doc.addPage();
+    yPos = 80;
+    doc.setTextColor(0, 0, 0);
 
-      // Header Halaman Panduan
-      doc.setFillColor(79, 70, 229);
-      doc.rect(0, 0, pageWidth, 60, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
-      doc.text('PANDUAN LENGKAP', 40, 25);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.text('MTs. AN-NUR BULULAWANG', 40, 45);
+    // Lebar kolom untuk 3 panduan
+    const colWidth = (pageWidth - 100) / 3;
+    const startX = [40, 40 + colWidth + 10, 40 + 2 * (colWidth + 10)];
 
-      // Clone panduan element to handle hidden state
-      const clone = panduanElement.cloneNode(true);
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.top = '-9999px';
-      container.style.left = '0';
-      container.style.width = '1200px'; // Ensure enough width
-      container.style.backgroundColor = '#ffffff';
-      container.appendChild(clone);
-      document.body.appendChild(container);
+    // ========== KOLOM 1: TABEL 1 - REKAP MESIN ==========
+    doc.setFillColor(59, 130, 246); // Blue
+    doc.roundedRect(startX[0], yPos, colWidth, 30, 5, 5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text('TABEL 1: REKAP MESIN', startX[0] + 10, yPos + 20);
 
-      let panduanCanvas;
-      try {
-        panduanCanvas = await html2canvas(clone, {
-          scale: 1.5,
-          backgroundColor: '#ffffff',
-          logging: false,
-        });
-      } finally {
-        document.body.removeChild(container);
-      }
+    // ========== KOLOM 2: TABEL 2 - KEDISIPLINAN ==========
+    doc.setFillColor(34, 197, 94); // Green
+    doc.roundedRect(startX[1], yPos, colWidth, 30, 5, 5, 'F');
+    doc.text('TABEL 2: KEDISIPLINAN', startX[1] + 10, yPos + 20);
 
-      const panduanImg = panduanCanvas.toDataURL('image/jpeg', 0.9);
-      const panduanWidth = panduanCanvas.width;
-      const panduanHeight = panduanCanvas.height;
+    // ========== KOLOM 3: TABEL 3 - EVALUASI ==========
+    doc.setFillColor(168, 85, 247); // Purple
+    doc.roundedRect(startX[2], yPos, colWidth, 30, 5, 5, 'F');
+    doc.text('TABEL 3: EVALUASI', startX[2] + 10, yPos + 20);
 
-      // Fit to page
-      const contentWidth = pageWidth - 60; // 30 margin left/right
-      const contentHeight = pageHeight - 100; // Top margin + bottom
+    yPos += 45;
+    doc.setTextColor(0, 0, 0);
 
-      const ratio = Math.min(
-        contentWidth / panduanWidth,
-        contentHeight / panduanHeight
-      );
-      const scaledWidth = panduanWidth * ratio;
-      const scaledHeight = panduanHeight * ratio;
+    // Subtitle
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text('Data Mentah Mesin', startX[0] + 10, yPos);
+    doc.text('Evaluasi Disiplin Waktu', startX[1] + 10, yPos);
+    doc.text('Evaluasi Kehadiran', startX[2] + 10, yPos);
 
-      doc.addImage(panduanImg, 'JPEG', 30, 80, scaledWidth, scaledHeight);
+    yPos += 15;
 
-      // Handle jika panduan terlalu panjang (multiple pages)
-      let panduanHeightLeft = scaledHeight - contentHeight;
-      while (panduanHeightLeft > 0) {
-        doc.addPage();
-        doc.setFillColor(79, 70, 229);
-        doc.rect(0, 0, pageWidth, 60, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text('MTs. AN-NUR BULULAWANG', 40, 20);
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'normal');
-        doc.text('PANDUAN LENGKAP (lanjutan)', 40, 38);
+    // ===== KOLOM 1: ITEM 1 - BIRU =====
+    doc.setFillColor(173, 216, 230); // Light Blue
+    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 139);
+    doc.text('BIRU', startX[0] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const biru1 = doc.splitTextToSize('Scan MASUK dan PULANG keduanya tercatat', colWidth - 20);
+    doc.text(biru1, startX[0] + 10, yPos + 28);
 
-        const nextPageMarginTop = 70;
-        const nextYPosition = nextPageMarginTop - (scaledHeight - panduanHeightLeft);
-        doc.addImage(
-          panduanImg,
-          'JPEG',
-          30,
-          nextYPosition,
-          scaledWidth,
-          scaledHeight
-        );
-        panduanHeightLeft -= pageHeight - nextPageMarginTop - 50;
-      }
-    }
+    // ===== KOLOM 2: ITEM 1 - HIJAU =====
+    doc.setFillColor(144, 238, 144); // Light Green
+    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 100, 0);
+    doc.text('HIJAU', startX[1] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const hijau1 = doc.splitTextToSize('Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', colWidth - 20);
+    doc.text(hijau1, startX[1] + 10, yPos + 28);
+
+    // ===== KOLOM 3: ITEM 1 - H =====
+    doc.setFillColor(144, 238, 144); // Light Green
+    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 100, 0);
+    doc.text('H = HADIR', startX[2] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const h1 = doc.splitTextToSize('Karyawan hadir (ada scan masuk)', colWidth - 20);
+    doc.text(h1, startX[2] + 10, yPos + 28);
+
+    yPos += 60;
+
+    // ===== KOLOM 1: ITEM 2 - KUNING =====
+    doc.setFillColor(255, 255, 153); // Light Yellow
+    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(184, 134, 11);
+    doc.text('KUNING', startX[0] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const kuning1 = doc.splitTextToSize('Hanya scan MASUK saja atau PULANG saja', colWidth - 20);
+    doc.text(kuning1, startX[0] + 10, yPos + 28);
+
+    // ===== KOLOM 2: ITEM 2 - KUNING =====
+    doc.setFillColor(255, 255, 153);
+    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(184, 134, 11);
+    doc.text('KUNING', startX[1] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const kuning2 = doc.splitTextToSize('Datang SETELAH jadwal (Terlambat)', colWidth - 20);
+    doc.text(kuning2, startX[1] + 10, yPos + 28);
+
+    // ===== KOLOM 3: ITEM 2 - T =====
+    doc.setFillColor(255, 255, 153);
+    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(184, 134, 11);
+    doc.text('T = TERLAMBAT', startX[2] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const t1 = doc.splitTextToSize('Hadir tapi datang setelah jadwal', colWidth - 20);
+    doc.text(t1, startX[2] + 10, yPos + 28);
+
+    yPos += 60;
+
+    // ===== KOLOM 1: ITEM 3 - MERAH =====
+    doc.setFillColor(255, 182, 193); // Light Red
+    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(139, 0, 0);
+    doc.text('MERAH', startX[0] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const merah1 = doc.splitTextToSize('Tidak ada scan MASUK maupun PULANG (Alpha)', colWidth - 20);
+    doc.text(merah1, startX[0] + 10, yPos + 28);
+
+    // ===== KOLOM 2: ITEM 3 - MERAH =====
+    doc.setFillColor(255, 182, 193);
+    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(139, 0, 0);
+    doc.text('MERAH', startX[1] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const merah2 = doc.splitTextToSize('Tidak scan sama sekali (Alpha)', colWidth - 20);
+    doc.text(merah2, startX[1] + 10, yPos + 28);
+
+    // ===== KOLOM 3: ITEM 3 - A =====
+    doc.setFillColor(255, 182, 193);
+    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(139, 0, 0);
+    doc.text('A = ALPHA', startX[2] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const a1 = doc.splitTextToSize('Tidak hadir (tidak ada scan)', colWidth - 20);
+    doc.text(a1, startX[2] + 10, yPos + 28);
+
+    yPos += 60;
+
+    // ===== KOLOM 1: ITEM 4 - PUTIH L =====
+    doc.setFillColor(245, 245, 245); // Light Gray
+    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(105, 105, 105);
+    doc.text('PUTIH + L', startX[0] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const putih1 = doc.splitTextToSize('Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', colWidth - 20);
+    doc.text(putih1, startX[0] + 10, yPos + 28);
+
+    // ===== KOLOM 2: ITEM 4 - PUTIH L =====
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(105, 105, 105);
+    doc.text('PUTIH + L', startX[1] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const putih2 = doc.splitTextToSize('Hari LIBUR (tidak perlu scan)', colWidth - 20);
+    doc.text(putih2, startX[1] + 10, yPos + 28);
+
+    // ===== KOLOM 3: ITEM 4 - L =====
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(105, 105, 105);
+    doc.text('L = LIBUR', startX[2] + 10, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    const l1 = doc.splitTextToSize('Hari libur (Jumat/OFF)', colWidth - 20);
+    doc.text(l1, startX[2] + 10, yPos + 28);
+
+    yPos += 60;
+
+    // Catatan Tambahan
+    doc.setFillColor(255, 248, 220); // Light Yellow Background
+    doc.roundedRect(40, yPos, pageWidth - 80, 60, 5, 5, 'F');
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('CATATAN PENTING:', 50, yPos + 15);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    const catatan = [
+      '• Tabel 1 menampilkan data mentah dari mesin fingerprint tanpa evaluasi.',
+      '• Tabel 2 mengevaluasi kedisiplinan waktu berdasarkan jadwal mengajar.',
+      '• Tabel 3 mengevaluasi kehadiran secara umum (hadir/tidak hadir).',
+    ];
+    let catatanY = yPos + 30;
+    catatan.forEach(line => {
+      doc.text(line, 50, catatanY);
+      catatanY += 10;
+    });
 
     // Footer semua halaman
     const totalPages = doc.internal.getNumberOfPages();
@@ -4075,7 +4265,8 @@ const AttendanceRecapSystem = () => {
                             {recapData.dateRange.map((date) => (
                               <th
                                 key={date}
-                                className="border border-gray-400 px-2 py-3 text-black font-bold"
+                                className="border border-gray-400 px-8 py-3 text-black font-bold"
+                                style={{ minWidth: '85px' }}
                               >
                                 {getDateLabel(date)}
                               </th>
@@ -4147,8 +4338,8 @@ const AttendanceRecapSystem = () => {
                                   return (
                                     <td
                                       key={date}
-                                      className="border border-gray-400 px-2 py-2 text-center font-bold"
-                                      style={{ backgroundColor: bgColor }}
+                                      className="border border-gray-400 px-8 py-2 text-center font-bold"
+                                      style={{ backgroundColor: bgColor, minWidth: '85px' }}
                                     >
                                       {ev.text}
                                     </td>
