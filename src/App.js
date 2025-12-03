@@ -1399,31 +1399,36 @@ const AttendanceRecapSystem = () => {
 
       categories.forEach((cat, idx) => {
         const data = categoryEvaluation[cat];
-        doc.setFillColor(204, 251, 241); // Teal 100 (Lebih gelap dari sebelumnya)
-        doc.roundedRect(catX[idx], yPos, catWidth, 70, 5, 5, 'F');
 
-        doc.setFontSize(12);
+        // Kotak berwarna berbeda untuk setiap kategori
+        if (cat === 'Pimpinan') {
+          doc.setFillColor(147, 197, 253); // Blue 300
+        } else if (cat === 'Guru') {
+          doc.setFillColor(134, 239, 172); // Green 300
+        } else {
+          doc.setFillColor(253, 224, 71); // Yellow 300
+        }
+        doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(15, 118, 110); // Teal 700 (Lebih tua)
+        doc.setTextColor(0, 0, 0);
         doc.text(cat, catX[idx] + 10, yPos + 15);
 
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0); // Hitam pekat
         doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
 
-        doc.setFontSize(24);
+        doc.setFontSize(26);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(15, 118, 110); // Teal 700 (Lebih tua)
-        doc.text(`${data.persenKehadiran}%`, catX[idx] + 10, yPos + 50);
+        doc.text(`${data.persenKehadiran}%`, catX[idx] + 10, yPos + 52);
 
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0); // Hitam pekat
-        doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 62);
+        doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 65);
       });
 
-      yPos += 85;
+      yPos += 90;
 
       // 2. KEDISIPLINAN WAKTU
       doc.setFontSize(14);
@@ -1434,31 +1439,36 @@ const AttendanceRecapSystem = () => {
 
       categories.forEach((cat, idx) => {
         const data = categoryEvaluation[cat];
-        doc.setFillColor(209, 250, 229); // Emerald 100 (Lebih gelap dari sebelumnya)
-        doc.roundedRect(catX[idx], yPos, catWidth, 70, 5, 5, 'F');
 
-        doc.setFontSize(12);
+        // Kotak berwarna berbeda untuk setiap kategori
+        if (cat === 'Pimpinan') {
+          doc.setFillColor(147, 197, 253); // Blue 300
+        } else if (cat === 'Guru') {
+          doc.setFillColor(134, 239, 172); // Green 300
+        } else {
+          doc.setFillColor(253, 224, 71); // Yellow 300
+        }
+        doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(4, 120, 87); // Emerald 700 (Lebih tua)
+        doc.setTextColor(0, 0, 0);
         doc.text(cat, catX[idx] + 10, yPos + 15);
 
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0); // Hitam pekat
         doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
 
-        doc.setFontSize(24);
+        doc.setFontSize(26);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(4, 120, 87); // Emerald 700 (Lebih tua)
-        doc.text(`${data.persenTepat}%`, catX[idx] + 10, yPos + 50);
+        doc.text(`${data.persenTepat}%`, catX[idx] + 10, yPos + 52);
 
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0); // Hitam pekat
-        doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 62);
+        doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 65);
       });
 
-      yPos += 85;
+      yPos += 90;
 
       // HASIL EVALUASI
       doc.setFillColor(255, 255, 255);
