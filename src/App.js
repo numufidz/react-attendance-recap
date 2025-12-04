@@ -3461,12 +3461,15 @@ const AttendanceRecapSystem = () => {
           <div className="space-y-8">
             {activeRecapTab === 'summary' && renderSummary()}
             {activeRecapTab === 'category' && categoryEvaluation && (
-              <div className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-teal-200 to-cyan-200">
-                <h2 className="text-3xl font-bold mb-6 text-teal-900">Evaluasi Berdasarkan Kategori</h2>
+              <div className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-indigo-50 to-teal-100 border border-indigo-200">
+                <div className="mb-6">
+                  <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
+                  <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
+                </div>
 
                 {/* Komponen Evaluasi */}
                 <div className="space-y-6 mb-8">
-                  <h3 className="text-xl font-bold text-teal-800">1. Kehadiran</h3>
+                  <h3 className="text-xl font-bold text-indigo-800">1. Kehadiran</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
                       <div key={cat} className="bg-white p-6 rounded-lg shadow">
@@ -3484,7 +3487,7 @@ const AttendanceRecapSystem = () => {
                 </div>
 
                 <div className="space-y-6 mb-8">
-                  <h3 className="text-xl font-bold text-teal-800">2. Kedisiplinan Waktu</h3>
+                  <h3 className="text-xl font-bold text-indigo-800">2. Kedisiplinan Waktu</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
                       <div key={cat} className="bg-white p-6 rounded-lg shadow">
@@ -3554,38 +3557,43 @@ const AttendanceRecapSystem = () => {
             {activeRecapTab === 'ranking' && rankingData && (
               <div
                 ref={rankingRef}
-                className="p-6 rounded-xl shadow-lg bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 text-white"
+                className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200"
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold flex items-center gap-2">
-                    🏆 PERINGKAT GURU & KARYAWAN
-                  </h3>
-                  <div className="flex flex-wrap justify-center md:justify-end gap-2">
-                    <button
-                      onClick={downloadRankingAsPdf}
-                      className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-                    >
-                      <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Peringkat</span>
-                    </button>
-                    <button
-                      onClick={handleCopyRanking}
-                      className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-                    >
-                      <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Peringkat</span>
-                    </button>
-                    <button
-                      onClick={handleDownloadRankingJPG}
-                      className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-                    >
-                      <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Peringkat</span>
-                    </button>
+                <div className="mb-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-3xl font-bold text-amber-900 mb-2 flex items-center gap-2">
+                        🏆 Peringkat Guru & Karyawan
+                      </h3>
+                      <p className="text-amber-700">Ranking berdasarkan disiplin waktu dan ketertiban administrasi</p>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        onClick={downloadRankingAsPdf}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Peringkat</span>
+                      </button>
+                      <button
+                        onClick={handleCopyRanking}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Peringkat</span>
+                      </button>
+                      <button
+                        onClick={handleDownloadRankingJPG}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Peringkat</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   {/* Tabel 1: Disiplin Waktu Tertinggi */}
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  <div className="bg-white rounded-lg p-5 shadow-md">
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
                       <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
                         1
                       </span>
@@ -3635,8 +3643,8 @@ const AttendanceRecapSystem = () => {
                   </div>
 
                   {/* Tabel 2: Tertib Administrasi */}
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  <div className="bg-white rounded-lg p-5 shadow-md">
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
                       <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">
                         2
                       </span>
@@ -3684,8 +3692,8 @@ const AttendanceRecapSystem = () => {
                   </div>
 
                   {/* Tabel 3: Rendah Kesadaran */}
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  <div className="bg-white rounded-lg p-5 shadow-md">
+                    <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
                       <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
                         3
                       </span>
@@ -4136,31 +4144,36 @@ const AttendanceRecapSystem = () => {
               <>
                 <div style={{ display: activeRecapTab === 'table1' ? 'block' : 'none' }}>
                   <div>
-                    <div className="bg-blue-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-gray-800">
-                        1. Rekap Mesin
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => copyTableToClipboard('tabel1')}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Copy-Paste Tabel ke Excel
-                        </button>
-                        <button
-                          onClick={() =>
-                            downloadTableAsExcel('tabel1', 'rekap_mesin')
-                          }
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download Excel
-                        </button>
-                        <button
-                          onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download PDF
-                        </button>
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-xl mb-4 shadow-sm border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-2xl font-bold text-blue-800 mb-1">
+                            1. Rekap Mesin
+                          </h3>
+                          <p className="text-sm text-blue-600">Data mentah dari mesin fingerprint</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => copyTableToClipboard('tabel1')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                          </button>
+                          <button
+                            onClick={() =>
+                              downloadTableAsExcel('tabel1', 'rekap_mesin')
+                            }
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download Excel
+                          </button>
+                          <button
+                            onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="overflow-x-auto border rounded-lg mb-8">
@@ -4368,33 +4381,38 @@ const AttendanceRecapSystem = () => {
                 </div>
                 <div style={{ display: activeRecapTab === 'table2' ? 'block' : 'none' }}>
                   <div>
-                    <div className="bg-green-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-gray-800">
-                        2. Kedisiplinan Waktu
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => copyTableToClipboard('tabel2')}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Copy-Paste Tabel ke Excel
-                        </button>
-                        <button
-                          onClick={() =>
-                            downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
-                          }
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download Excel
-                        </button>
-                        <button
-                          onClick={() =>
-                            downloadAsPdf('tabel2', 'kedisiplinan_waktu')
-                          }
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download PDF
-                        </button>
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-xl mb-4 shadow-sm border border-green-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-2xl font-bold text-green-800 mb-1">
+                            2. Kedisiplinan Waktu
+                          </h3>
+                          <p className="text-sm text-green-600">Evaluasi ketepatan waktu kehadiran</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => copyTableToClipboard('tabel2')}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                          </button>
+                          <button
+                            onClick={() =>
+                              downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
+                            }
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download Excel
+                          </button>
+                          <button
+                            onClick={() =>
+                              downloadAsPdf('tabel2', 'kedisiplinan_waktu')
+                            }
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="overflow-x-auto border rounded-lg mb-8">
@@ -4609,33 +4627,38 @@ const AttendanceRecapSystem = () => {
                 </div>
                 <div style={{ display: activeRecapTab === 'table3' ? 'block' : 'none' }}>
                   <div>
-                    <div className="bg-purple-100 p-4 rounded-lg mb-3 flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-gray-800">
-                        3. Evaluasi Kehadiran
-                      </h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => copyTableToClipboard('tabel3')}
-                          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Copy-Paste Tabel ke Excel
-                        </button>
-                        <button
-                          onClick={() =>
-                            downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
-                          }
-                          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download Excel
-                        </button>
-                        <button
-                          onClick={() =>
-                            downloadAsPdf('tabel3', 'evaluasi_kehadiran')
-                          }
-                          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                        >
-                          <Download size={16} /> Download PDF
-                        </button>
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-5 rounded-xl mb-4 shadow-sm border border-purple-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-2xl font-bold text-purple-800 mb-1">
+                            3. Evaluasi Kehadiran
+                          </h3>
+                          <p className="text-sm text-purple-600">Status kehadiran berdasarkan jadwal</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => copyTableToClipboard('tabel3')}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                          </button>
+                          <button
+                            onClick={() =>
+                              downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
+                            }
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download Excel
+                          </button>
+                          <button
+                            onClick={() =>
+                              downloadAsPdf('tabel3', 'evaluasi_kehadiran')
+                            }
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                          >
+                            <Download size={16} /> Download PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="overflow-x-auto border rounded-lg mb-8">
