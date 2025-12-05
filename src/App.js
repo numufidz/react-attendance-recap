@@ -1400,13 +1400,13 @@ const AttendanceRecapSystem = () => {
       categories.forEach((cat, idx) => {
         const data = categoryEvaluation[cat];
 
-        // Kotak berwarna berbeda untuk setiap kategori
+        // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
         if (cat === 'Pimpinan') {
-          doc.setFillColor(147, 197, 253); // Blue 300
+          doc.setFillColor(200, 230, 255); // Soft Blue
         } else if (cat === 'Guru') {
-          doc.setFillColor(134, 239, 172); // Green 300
+          doc.setFillColor(200, 255, 200); // Soft Green
         } else {
-          doc.setFillColor(253, 224, 71); // Yellow 300
+          doc.setFillColor(255, 255, 200); // Soft Yellow
         }
         doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
 
@@ -1419,9 +1419,35 @@ const AttendanceRecapSystem = () => {
         doc.setFont(undefined, 'normal');
         doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
 
+        // Persentase besar
         doc.setFontSize(26);
         doc.setFont(undefined, 'bold');
-        doc.text(`${data.persenKehadiran}%`, catX[idx] + 10, yPos + 52);
+        const persenText = `${data.persenKehadiran}%`;
+        const persenWidth = doc.getTextWidth(persenText);
+        doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+        // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
+        const predikat = getPredicate(data.persenKehadiran);
+        const predikatText = predikat;
+
+        // Ukur lebar teks predikat
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        const predikatWidth = doc.getTextWidth(predikatText);
+        const badgeWidth = predikatWidth + 12;
+        const badgeHeight = 16;
+        const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
+        const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
+
+        // Gambar badge dengan border radius
+        doc.setFillColor(255, 255, 255); // Putih
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+        // Teks predikat di dalam badge
+        doc.setTextColor(0, 0, 0);
+        doc.text(predikatText, badgeX + 6, badgeY + 11);
 
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
@@ -1440,13 +1466,13 @@ const AttendanceRecapSystem = () => {
       categories.forEach((cat, idx) => {
         const data = categoryEvaluation[cat];
 
-        // Kotak berwarna berbeda untuk setiap kategori
+        // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
         if (cat === 'Pimpinan') {
-          doc.setFillColor(147, 197, 253); // Blue 300
+          doc.setFillColor(200, 230, 255); // Soft Blue
         } else if (cat === 'Guru') {
-          doc.setFillColor(134, 239, 172); // Green 300
+          doc.setFillColor(200, 255, 200); // Soft Green
         } else {
-          doc.setFillColor(253, 224, 71); // Yellow 300
+          doc.setFillColor(255, 255, 200); // Soft Yellow
         }
         doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
 
@@ -1459,9 +1485,35 @@ const AttendanceRecapSystem = () => {
         doc.setFont(undefined, 'normal');
         doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
 
+        // Persentase besar
         doc.setFontSize(26);
         doc.setFont(undefined, 'bold');
-        doc.text(`${data.persenTepat}%`, catX[idx] + 10, yPos + 52);
+        const persenText = `${data.persenTepat}%`;
+        const persenWidth = doc.getTextWidth(persenText);
+        doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+        // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
+        const predikat = getPredicate(data.persenTepat);
+        const predikatText = predikat;
+
+        // Ukur lebar teks predikat
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        const predikatWidth = doc.getTextWidth(predikatText);
+        const badgeWidth = predikatWidth + 12;
+        const badgeHeight = 16;
+        const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
+        const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
+
+        // Gambar badge dengan border radius
+        doc.setFillColor(255, 255, 255); // Putih
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+        // Teks predikat di dalam badge
+        doc.setTextColor(0, 0, 0);
+        doc.text(predikatText, badgeX + 6, badgeY + 11);
 
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
@@ -1470,71 +1522,127 @@ const AttendanceRecapSystem = () => {
 
       yPos += 90;
 
-      // HASIL EVALUASI
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(200, 200, 200);
-      doc.roundedRect(40, yPos, pageWidth - 80, 60, 5, 5, 'FD'); // Tinggi dikurangi jadi 60
+      // REKOMENDASI - REDESIGNED WITH DYNAMIC CONTENT
+      // Fungsi untuk generate rekomendasi spesifik
+      const generateRecommendation = (category, kehadiranPct, disiplinPct) => {
+        const categoryName = category;
+        let kehadiranRec = '';
+        let disiplinRec = '';
 
-      doc.setFontSize(12);
+        // Rekomendasi Kehadiran
+        if (kehadiranPct >= 91) {
+          kehadiranRec = `Pertahankan kehadiran ${categoryName} yang sudah sangat baik`;
+        } else if (kehadiranPct >= 81) {
+          kehadiranRec = `Tingkatkan kehadiran ${categoryName} untuk mencapai kategori Istimewa`;
+        } else if (kehadiranPct >= 71) {
+          kehadiranRec = `Perbaiki kehadiran ${categoryName} dengan monitoring lebih ketat`;
+        } else {
+          kehadiranRec = `Evaluasi dan pembinaan intensif untuk ${categoryName} yang sering tidak hadir`;
+        }
+
+        // Rekomendasi Disiplin
+        if (disiplinPct >= 91) {
+          disiplinRec = `kedisiplinan waktu sudah sangat baik`;
+        } else if (disiplinPct >= 81) {
+          disiplinRec = `tingkatkan ketepatan waktu`;
+        } else if (disiplinPct >= 71) {
+          disiplinRec = `perbaiki kedisiplinan dengan reminder rutin`;
+        } else {
+          disiplinRec = `terapkan sanksi tegas untuk keterlambatan`;
+        }
+
+        return { kehadiranRec, disiplinRec };
+      };
+
+      const pimpinanRec = generateRecommendation('Pimpinan', categoryEvaluation.Pimpinan.persenKehadiran, categoryEvaluation.Pimpinan.persenTepat);
+      const guruRec = generateRecommendation('Guru', categoryEvaluation.Guru.persenKehadiran, categoryEvaluation.Guru.persenTepat);
+      const tendikRec = generateRecommendation('Tendik', categoryEvaluation.Tendik.persenKehadiran, categoryEvaluation.Tendik.persenTepat);
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(79, 70, 229);
+      doc.setLineWidth(2);
+      doc.roundedRect(40, yPos, pageWidth - 80, 165, 5, 5, 'FD');
+
+      // Header Rekomendasi
+      doc.setFillColor(79, 70, 229);
+      doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('REKOMENDASI', 50, yPos + 17);
+
+      doc.setTextColor(0, 0, 0);
+
+      // LAYOUT 2 KOLOM
+      const leftColX = 50;
+      const rightColX = (pageWidth / 2) + 20;
+      const colWidth = (pageWidth / 2) - 60;
+
+      let recLeftY = yPos + 45;
+      let recRightY = yPos + 45;
+
+      // ===== KOLOM KIRI: REKOMENDASI PER KATEGORI =====
+
+      // Rekomendasi Pimpinan
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(59, 130, 246);
+      doc.text('1. Pimpinan:', leftColX, recLeftY);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      recLeftY += 12;
+      const pimpinanText = `${pimpinanRec.kehadiranRec}, ${pimpinanRec.disiplinRec}.`;
+      const pimpinanLines = doc.splitTextToSize(pimpinanText, colWidth);
+      doc.text(pimpinanLines, leftColX + 5, recLeftY);
+      recLeftY += pimpinanLines.length * 11 + 10;
+
+      // Rekomendasi Guru
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(34, 197, 94);
+      doc.text('2. Guru:', leftColX, recLeftY);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      recLeftY += 12;
+      const guruText = `${guruRec.kehadiranRec}, ${guruRec.disiplinRec}.`;
+      const guruLines = doc.splitTextToSize(guruText, colWidth);
+      doc.text(guruLines, leftColX + 5, recLeftY);
+      recLeftY += guruLines.length * 11 + 10;
+
+      // Rekomendasi Tendik
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(251, 191, 36);
+      doc.text('3. Tendik:', leftColX, recLeftY);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      recLeftY += 12;
+      const tendikText = `${tendikRec.kehadiranRec}, ${tendikRec.disiplinRec}.`;
+      const tendikLines = doc.splitTextToSize(tendikText, colWidth);
+      doc.text(tendikLines, leftColX + 5, recLeftY);
+
+      // ===== KOLOM KANAN: TINDAKAN UMUM =====
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text('Hasil Evaluasi', 50, yPos + 15);
-
+      doc.text('Tindakan Umum:', rightColX, recRightY);
+      doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      let evalY = yPos + 28;
-      const col2X = (pageWidth / 2) + 20; // Posisi kolom 2
+      recRightY += 15;
 
-      // KOLOM 1: Kehadiran
-      doc.setFont(undefined, 'bold');
-      doc.text('1. Kehadiran:', 50, evalY);
-      doc.setFont(undefined, 'normal');
+      const tindakan1 = doc.splitTextToSize('• Tingkatkan pemantauan waktu kedatangan dan kepulangan secara real-time', colWidth);
+      doc.text(tindakan1, rightColX + 5, recRightY);
+      recRightY += tindakan1.length * 11 + 8;
 
-      let leftY = evalY + 10;
-      doc.text(`• Pimpinan: ${categoryEvaluation.Pimpinan.persenKehadiran}% (${getPredicate(categoryEvaluation.Pimpinan.persenKehadiran)})`, 55, leftY);
-      leftY += 8;
-      doc.text(`• Guru: ${categoryEvaluation.Guru.persenKehadiran}% (${getPredicate(categoryEvaluation.Guru.persenKehadiran)})`, 55, leftY);
-      leftY += 8;
-      doc.text(`• Tendik: ${categoryEvaluation.Tendik.persenKehadiran}% (${getPredicate(categoryEvaluation.Tendik.persenKehadiran)})`, 55, leftY);
+      const tindakan2 = doc.splitTextToSize('• Adakan pembinaan manajemen waktu dan kesadaran administrasi', colWidth);
+      doc.text(tindakan2, rightColX + 5, recRightY);
+      recRightY += tindakan2.length * 11 + 8;
 
-      // KOLOM 2: Kedisiplinan Waktu
-      doc.setFont(undefined, 'bold');
-      doc.text('2. Kedisiplinan Waktu:', col2X, evalY);
-      doc.setFont(undefined, 'normal');
-
-      let rightY = evalY + 10;
-      doc.text(`• Pimpinan: ${categoryEvaluation.Pimpinan.persenTepat}% (${getPredicate(categoryEvaluation.Pimpinan.persenTepat)})`, col2X + 5, rightY);
-      rightY += 8;
-      doc.text(`• Guru: ${categoryEvaluation.Guru.persenTepat}% (${getPredicate(categoryEvaluation.Guru.persenTepat)})`, col2X + 5, rightY);
-      rightY += 8;
-      doc.text(`• Tendik: ${categoryEvaluation.Tendik.persenTepat}% (${getPredicate(categoryEvaluation.Tendik.persenTepat)})`, col2X + 5, rightY);
-
-      yPos += 75; // Space ke elemen berikutnya (Rekomendasi)
-
-      // REKOMENDASI
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(40, yPos, pageWidth - 80, 100, 5, 5, 'FD');
-
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Rekomendasi', 50, yPos + 15);
-
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      let recY = yPos + 28;
-      doc.text('1. Pimpinan: Pertahankan atau tingkatkan kehadiran', 50, recY);
-      recY += 10;
-      doc.text('2. Guru: Tingkatkan kehadiran bagi beberapa individu', 50, recY);
-      recY += 10;
-      doc.text('3. Tendik: Terapkan perbaikan dan penegasan disiplin', 50, recY);
-      recY += 15;
-      doc.setFont(undefined, 'italic');
-      doc.setFontSize(8);
-      doc.text('• Tingkatkan pemantauan waktu kedatangan dan kepulangan', 55, recY);
-      recY += 8;
-      doc.text('• Adakan pembinaan manajemen waktu', 55, recY);
-      recY += 8;
-      doc.text('• Terapkan sanksi dan penghargaan', 55, recY);
+      const tindakan3 = doc.splitTextToSize('• Terapkan sistem reward untuk yang disiplin dan sanksi untuk yang sering melanggar', colWidth);
+      doc.text(tindakan3, rightColX + 5, recRightY);
     }
 
     // ============= HALAMAN 3: RANKING (3 KOLOM) =============
