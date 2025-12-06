@@ -3392,6 +3392,18 @@ const AttendanceRecapSystem = () => {
                   <span className="text-lg font-semibold text-gray-700">
                     Laporan Absensi
                   </span>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    Upload file excel yang diunduh dari{' '}
+                    <a
+                      href="https://fingerspot.io/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:text-indigo-800 underline"
+                    >
+                      fingerspot.io
+                    </a>
+                    {' '}atau mesin absensi Fingerspot
+                  </p>
                 </div>
                 <input
                   type="file"
@@ -3424,6 +3436,16 @@ const AttendanceRecapSystem = () => {
                   <span className="text-lg font-semibold text-gray-700">
                     Jadwal Kerja
                   </span>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    Upload file jadwal kerja,{' '}
+                    <a
+                      href="/template_jadwal_kerja.xlsx"
+                      download
+                      className="text-purple-600 hover:text-purple-800 underline font-medium"
+                    >
+                      klik di sini untuk contoh format
+                    </a>
+                  </p>
                 </div>
                 <input
                   type="file"
