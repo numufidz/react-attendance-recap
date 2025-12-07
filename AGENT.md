@@ -1,3 +1,7 @@
+# AGENT
+
+File ini berisi catatan dan instruksi khusus untuk Agen AI yang bekerja pada proyek ini.
+
 # Sistem Rekap Absensi - MTs. An-Nur Bululawang
 
 ## Deskripsi
@@ -168,3 +172,4 @@ Untuk bantuan atau pertanyaan, hubungi tim Matsanuba Management Technology.
 ---
 
 **Powered by Matsanuba Management Technology**
+

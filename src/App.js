@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Download, FileText, Loader } from 'lucide-react';
+import { Upload, Download, FileText, Loader, Trash2, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -24,6 +24,13 @@ const AttendanceRecapSystem = () => {
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [activeRecapTab, setActiveRecapTab] = useState('summary');
+  // State untuk Hari Libur Khusus
+  const [holidays, setHolidays] = useState(() => {
+    const saved = localStorage.getItem('holidays');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newHoliday, setNewHoliday] = useState('');
+
   const panduanRef = React.useRef(null);
 
   // Ref untuk capture kesimpulan sebagai gambar
@@ -31,6 +38,9 @@ const AttendanceRecapSystem = () => {
 
   // Ref untuk capture peringkat sebagai gambar
   const rankingRef = React.useRef(null);
+
+  // Ref untuk capture kategori sebagai gambar
+  const categoryRef = React.useRef(null);
 
   // Download sebagai JPG
   const handleDownloadSummaryJPG = async () => {
@@ -109,6 +119,288 @@ const AttendanceRecapSystem = () => {
       link.download = `peringkat-karyawan-${summaryData?.periode || 'rekap'}.jpg`;
       link.click();
     }
+  };
+
+  // Handler Kategori Evaluation
+  const handleCopyCategory = async () => {
+    if (categoryRef.current) {
+      const canvas = await html2canvas(categoryRef.current, {
+        scale: 2,
+        backgroundColor: null,
+      });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob }),
+          ]);
+          alert('Gambar evaluasi kategori berhasil disalin ke clipboard!');
+        }
+      });
+    }
+  };
+
+  const handleDownloadCategoryJPG = async () => {
+    if (categoryRef.current) {
+      const canvas = await html2canvas(categoryRef.current, {
+        scale: 2,
+        backgroundColor: null,
+      });
+      const image = canvas.toDataURL('image/jpeg', 1.0);
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `evaluasi-kategori-${summaryData?.periode || 'rekap'}.jpg`;
+      link.click();
+    }
+  };
+
+  const downloadCategoryAsPdf = () => {
+    if (!categoryEvaluation || !summaryData) return;
+    const doc = new jsPDF('p', 'pt', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 80;
+
+    // Header
+    doc.setFillColor(79, 70, 229); // Indigo
+    doc.rect(0, 0, pageWidth, 60, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont(undefined, 'bold');
+    doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
+    doc.setFontSize(14);
+    doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Periode: ${summaryData.periode}`, 40, 55);
+
+    doc.setTextColor(0, 0, 0);
+
+    // 1. KEHADIRAN
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('1. KEHADIRAN', 40, yPos);
+    yPos += 15;
+
+    const catWidth = (pageWidth - 100) / 3;
+    const catX = [40, 40 + catWidth + 10, 40 + 2 * (catWidth + 10)];
+    const categories = ['Pimpinan', 'Guru', 'Tendik'];
+
+    categories.forEach((cat, idx) => {
+      const data = categoryEvaluation[cat];
+
+      // Kotak berwarna berbeda
+      if (cat === 'Pimpinan') {
+        doc.setFillColor(200, 230, 255); // Soft Blue
+      } else if (cat === 'Guru') {
+        doc.setFillColor(200, 255, 200); // Soft Green
+      } else {
+        doc.setFillColor(255, 255, 200); // Soft Yellow
+      }
+      doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(cat, catX[idx] + 10, yPos + 15);
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
+
+      // Persentase besar
+      doc.setFontSize(26);
+      doc.setFont(undefined, 'bold');
+      const persenText = `${data.persenKehadiran}%`;
+      const persenWidth = doc.getTextWidth(persenText);
+      doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+      const predikat = getPredicate(data.persenKehadiran);
+
+      // Badge Predikat
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      const predikatWidth = doc.getTextWidth(predikat);
+      const badgeWidth = predikatWidth + 12;
+      const badgeHeight = 16;
+      const badgeX = catX[idx] + 10 + persenWidth + 8;
+      const badgeY = yPos + 52 - 12;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+      doc.setTextColor(0, 0, 0);
+      doc.text(predikat, badgeX + 6, badgeY + 11);
+
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 65);
+    });
+
+    yPos += 90;
+
+    // 2. KEDISIPLINAN WAKTU
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('2. KEDISIPLINAN WAKTU', 40, yPos);
+    yPos += 15;
+
+    categories.forEach((cat, idx) => {
+      const data = categoryEvaluation[cat];
+
+      if (cat === 'Pimpinan') {
+        doc.setFillColor(200, 230, 255);
+      } else if (cat === 'Guru') {
+        doc.setFillColor(200, 255, 200);
+      } else {
+        doc.setFillColor(255, 255, 200);
+      }
+      doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(cat, catX[idx] + 10, yPos + 15);
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
+
+      doc.setFontSize(26);
+      doc.setFont(undefined, 'bold');
+      const persenText = `${data.persenTepat}%`;
+      const persenWidth = doc.getTextWidth(persenText);
+      doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+      const predikat = getPredicate(data.persenTepat);
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      const predikatWidth = doc.getTextWidth(predikat);
+      const badgeWidth = predikatWidth + 12;
+      const badgeHeight = 16;
+      const badgeX = catX[idx] + 10 + persenWidth + 8;
+      const badgeY = yPos + 52 - 12;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+      doc.setTextColor(0, 0, 0);
+      doc.text(predikat, badgeX + 6, badgeY + 11);
+
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 65);
+    });
+
+    yPos += 90;
+
+    // REKOMENDASI Logic
+    const generateRecommendation = (category, kehadiranPct, disiplinPct) => {
+      const categoryName = category;
+      let kehadiranRec = '';
+      let disiplinRec = '';
+
+      if (kehadiranPct >= 91) kehadiranRec = `Pertahankan kehadiran ${categoryName} yang sudah sangat baik`;
+      else if (kehadiranPct >= 81) kehadiranRec = `Tingkatkan kehadiran ${categoryName} untuk mencapai kategori Istimewa`;
+      else if (kehadiranPct >= 71) kehadiranRec = `Perbaiki kehadiran ${categoryName} dengan monitoring lebih ketat`;
+      else kehadiranRec = `Evaluasi dan pembinaan intensif untuk ${categoryName} yang sering tidak hadir`;
+
+      if (disiplinPct >= 91) disiplinRec = `kedisiplinan waktu sudah sangat baik`;
+      else if (disiplinPct >= 81) disiplinRec = `tingkatkan ketepatan waktu`;
+      else if (disiplinPct >= 71) disiplinRec = `perbaiki kedisiplinan dengan reminder rutin`;
+      else disiplinRec = `terapkan sanksi tegas untuk keterlambatan`;
+
+      return { kehadiranRec, disiplinRec };
+    };
+
+    const pimpinanRec = generateRecommendation('Pimpinan', categoryEvaluation.Pimpinan.persenKehadiran, categoryEvaluation.Pimpinan.persenTepat);
+    const guruRec = generateRecommendation('Guru', categoryEvaluation.Guru.persenKehadiran, categoryEvaluation.Guru.persenTepat);
+    const tendikRec = generateRecommendation('Tendik', categoryEvaluation.Tendik.persenKehadiran, categoryEvaluation.Tendik.persenTepat);
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(79, 70, 229);
+    doc.setLineWidth(2);
+    // Adjust height for content
+    doc.roundedRect(40, yPos, pageWidth - 80, 165, 5, 5, 'FD');
+
+    // Header Rekomendasi
+    doc.setFillColor(79, 70, 229);
+    doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('REKOMENDASI', 50, yPos + 17);
+
+    doc.setTextColor(0, 0, 0);
+    const leftColX = 50;
+    const rightColX = (pageWidth / 2) + 20;
+    const colWidth = (pageWidth / 2) - 60;
+
+    let recLeftY = yPos + 45;
+    let recRightY = yPos + 45;
+
+    // LEFT COL
+    doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(59, 130, 246);
+    doc.text('1. Pimpinan:', leftColX, recLeftY);
+    doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+    recLeftY += 12;
+    const pText = doc.splitTextToSize(`${pimpinanRec.kehadiranRec}, ${pimpinanRec.disiplinRec}.`, colWidth);
+    doc.text(pText, leftColX + 5, recLeftY);
+    recLeftY += pText.length * 11 + 10;
+
+    doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(34, 197, 94);
+    doc.text('2. Guru:', leftColX, recLeftY);
+    doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+    recLeftY += 12;
+    const gText = doc.splitTextToSize(`${guruRec.kehadiranRec}, ${guruRec.disiplinRec}.`, colWidth);
+    doc.text(gText, leftColX + 5, recLeftY);
+    recLeftY += gText.length * 11 + 10;
+
+    doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(251, 191, 36);
+    doc.text('3. Tendik:', leftColX, recLeftY);
+    doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+    recLeftY += 12;
+    const tText = doc.splitTextToSize(`${tendikRec.kehadiranRec}, ${tendikRec.disiplinRec}.`, colWidth);
+    doc.text(tText, leftColX + 5, recLeftY);
+
+    // RIGHT COL
+    doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(0, 0, 0);
+    doc.text('Tindakan Umum:', rightColX, recRightY);
+    doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+    recRightY += 15;
+    const act1 = doc.splitTextToSize('• Tingkatkan pemantauan waktu kedatangan normal', colWidth);
+    doc.text(act1, rightColX + 5, recRightY);
+    recRightY += act1.length * 11 + 8;
+    const act2 = doc.splitTextToSize('• Adakan pembinaan manajemen waktu', colWidth);
+    doc.text(act2, rightColX + 5, recRightY);
+    recRightY += act2.length * 11 + 8;
+    const act3 = doc.splitTextToSize('• Reward & Punishment', colWidth);
+    doc.text(act3, rightColX + 5, recRightY);
+
+    doc.save(`evaluasi-kategori-${summaryData.periode}.pdf`);
+  };
+
+  // Handler Hari Libur
+  const addHoliday = () => {
+    if (!newHoliday) return;
+    if (holidays.includes(newHoliday)) {
+      alert('Tanggal libur ini sudah ada!');
+      return;
+    }
+    const updatedHolidays = [...holidays, newHoliday].sort();
+    setHolidays(updatedHolidays);
+    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
+    setNewHoliday('');
+  };
+
+  const removeHoliday = (dateToRemove) => {
+    const updatedHolidays = holidays.filter((date) => date !== dateToRemove);
+    setHolidays(updatedHolidays);
+    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
   };
 
   const downloadRankingAsPdf = async () => {
@@ -604,7 +896,14 @@ const AttendanceRecapSystem = () => {
             out: record?.checkOut || '-',
           };
 
-          if (schedRecord) {
+          if (holidays.includes(dateStr)) {
+            // Priority 1: Cek Hari Libur Khusus (Manual)
+            dailyEvaluation[dateStr] = {
+              status: 'L',
+              color: 'FFFFFF',
+              text: 'L',
+            };
+          } else if (schedRecord) {
             const dayName = getDayName(dateStr);
             const scheduleStart = schedRecord.schedule[dayName]?.start || 'L';
             dailyEvaluation[dateStr] = evaluateAttendance(
@@ -3110,9 +3409,37 @@ const AttendanceRecapSystem = () => {
           summaryData.warna
         }
       >
-        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          {summaryData.icon} KESIMPULAN PROFIL ABSENSI
-        </h3>
+        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
+          <h3 className="text-2xl font-bold flex items-center gap-2">
+            {summaryData.icon} KESIMPULAN PROFIL ABSENSI
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={downloadSummaryAsPdf}
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+            >
+              <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
+            </button>
+            <button
+              onClick={downloadAllTablesAsExcel}
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+            >
+              <Download size={16} /> <span className="md:hidden">Excel</span><span className="hidden md:inline">Download Excel (3 Tabel)</span>
+            </button>
+            <button
+              onClick={handleCopySummary}
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+            >
+              <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
+            </button>
+            <button
+              onClick={handleDownloadSummaryJPG}
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+            >
+              <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
+            </button>
+          </div>
+        </div>
         {/* MODIFIKASI DISINI: 
           Menggunakan Grid 3 Kolom untuk:
           1. Periode/Status
@@ -3317,32 +3644,7 @@ const AttendanceRecapSystem = () => {
 
 
 
-        <div className="mt-4 grid grid-cols-2 md:flex gap-3">
-          <button
-            onClick={downloadSummaryAsPdf}
-            className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-          >
-            <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Kesimpulan</span>
-          </button>
-          <button
-            onClick={downloadAllTablesAsExcel}
-            className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-          >
-            <Download size={16} /> <span className="md:hidden">Excel</span><span className="hidden md:inline">Download Excel Lengkap (3 Tabel)</span>
-          </button>
-          <button
-            onClick={handleCopySummary}
-            className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-          >
-            <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Kesimpulan</span>
-          </button>
-          <button
-            onClick={handleDownloadSummaryJPG}
-            className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 flex items-center gap-2"
-          >
-            <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Kesimpulan</span>
-          </button>
-        </div>
+
       </div>
     );
   };
@@ -3474,9 +3776,10 @@ const AttendanceRecapSystem = () => {
           </div>
           <div className="bg-indigo-50 rounded-xl p-6 mb-8">
             <div className="mb-6">
-              <h4 className="font-medium text-gray-700 mb-3">Periode</h4>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+              <h4 className="font-medium text-gray-700 mb-3">Pengaturan Periode & Libur</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                {/* Kolom 1: Tanggal Awal */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tanggal Awal
                   </label>
@@ -3484,10 +3787,12 @@ const AttendanceRecapSystem = () => {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
-                <div className="flex-1">
+
+                {/* Kolom 2: Tanggal Akhir */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tanggal Akhir
                   </label>
@@ -3495,11 +3800,65 @@ const AttendanceRecapSystem = () => {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
+                </div>
+
+                {/* Kolom 3: Input Hari Libur */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                    🎉 Libur Khusus
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={newHoliday}
+                      onChange={(e) => setNewHoliday(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Pilih tanggal"
+                    />
+                    <button
+                      onClick={addHoliday}
+                      className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
+                      title="Tambah Hari Libur"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Kolom 4: List Libur */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Daftar Libur ({holidays.length})
+                  </label>
+                  <div className="bg-white p-2 rounded-lg border border-gray-200 h-[42px] overflow-x-auto overflow-y-hidden whitespace-nowrap flex items-center">
+                    {holidays.length > 0 ? (
+                      <div className="flex gap-2">
+                        {holidays.map((date, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-xs flex items-center gap-1 flex-shrink-0"
+                          >
+                            <span>{getDateLabel(date)}</span>
+                            <button
+                              onClick={() => removeHoliday(date)}
+                              className="hover:text-red-900 focus:outline-none flex items-center"
+                              title="Hapus"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic px-1">Belum ada data</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+
             <div>
               <h4 className="font-medium text-gray-700 mb-3">Generate</h4>
               <div className="flex flex-col md:flex-row gap-4">
@@ -3591,10 +3950,37 @@ const AttendanceRecapSystem = () => {
           <div className="space-y-8">
             {activeRecapTab === 'summary' && renderSummary()}
             {activeRecapTab === 'category' && categoryEvaluation && (
-              <div className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-indigo-50 to-teal-100 border border-indigo-200">
+              <div
+                ref={categoryRef}
+                className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-indigo-50 to-teal-100 border border-indigo-200"
+              >
                 <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
-                  <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
+                      <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        onClick={downloadCategoryAsPdf}
+                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
+                      </button>
+                      <button
+                        onClick={handleCopyCategory}
+                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
+                      </button>
+                      <button
+                        onClick={handleDownloadCategoryJPG}
+                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Komponen Evaluasi */}
@@ -3637,7 +4023,7 @@ const AttendanceRecapSystem = () => {
                 {/* Hasil Evaluasi */}
                 <div className="bg-white p-6 rounded-lg shadow mb-6">
                   <h3 className="text-xl font-bold mb-4 text-teal-700">Hasil Evaluasi</h3>
-                  <div className="space-y-4 text-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
                     <div>
                       <h4 className="font-bold text-teal-800 mb-2">1. Kehadiran</h4>
                       <ul className="list-disc list-inside space-y-1 pl-2">
@@ -3702,19 +4088,19 @@ const AttendanceRecapSystem = () => {
                         onClick={downloadRankingAsPdf}
                         className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                       >
-                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF Peringkat</span>
+                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
                       </button>
                       <button
                         onClick={handleCopyRanking}
                         className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                       >
-                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG Peringkat</span>
+                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
                       </button>
                       <button
                         onClick={handleDownloadRankingJPG}
                         className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                       >
-                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG Peringkat</span>
+                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
                       </button>
                     </div>
                   </div>
@@ -3880,9 +4266,27 @@ const AttendanceRecapSystem = () => {
                 className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl"
               >
                 <div className="max-w-6xl mx-auto p-6 bg-gray-50">
-                  <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    📊 Panduan Lengkap 3 Tabel Rekap
-                  </h4>
+                  <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
+                    <h4 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                      📊 Panduan Lengkap 3 Tabel Rekap
+                    </h4>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCopyPanduan}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 shadow-sm hover:shadow-md transition-all text-sm"
+                      >
+                        <FileText size={16} />
+                        Copy JPG
+                      </button>
+                      <button
+                        onClick={handleDownloadPanduan}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm hover:shadow-md transition-all text-sm"
+                      >
+                        <Download size={16} />
+                        Download JPG
+                      </button>
+                    </div>
+                  </div>
 
                   {/* TABEL 1: Rekap Mesin */}
                   <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
@@ -4250,23 +4654,7 @@ const AttendanceRecapSystem = () => {
                     </ul>
                   </div>
 
-                  {/* Tombol Action */}
-                  <div className="flex justify-end gap-4">
-                    <button
-                      onClick={handleCopyPanduan}
-                      className="px-5 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
-                    >
-                      <FileText size={20} />
-                      Copy JPG Panduan Ini
-                    </button>
-                    <button
-                      onClick={handleDownloadPanduan}
-                      className="px-5 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
-                    >
-                      <Download size={20} />
-                      Download JPG Panduan Ini
-                    </button>
-                  </div>
+
                 </div>
               </div>
             )}
@@ -4287,7 +4675,7 @@ const AttendanceRecapSystem = () => {
                             onClick={() => copyTableToClipboard('tabel1')}
                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                           >
-                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                            <Download size={16} /> Copy Tabel ke Excel
                           </button>
                           <button
                             onClick={() =>
@@ -4524,7 +4912,7 @@ const AttendanceRecapSystem = () => {
                             onClick={() => copyTableToClipboard('tabel2')}
                             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                           >
-                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                            <Download size={16} /> Copy Tabel ke Excel
                           </button>
                           <button
                             onClick={() =>
@@ -4770,7 +5158,7 @@ const AttendanceRecapSystem = () => {
                             onClick={() => copyTableToClipboard('tabel3')}
                             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
                           >
-                            <Download size={16} /> Copy-Paste Tabel ke Excel
+                            <Download size={16} /> Copy Tabel ke Excel
                           </button>
                           <button
                             onClick={() =>
