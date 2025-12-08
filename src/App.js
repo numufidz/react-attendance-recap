@@ -3704,7 +3704,14 @@ const AttendanceRecapSystem = () => {
                     >
                       fingerspot.io
                     </a>
-                    {' '}atau mesin absensi Fingerspot
+                    {' '}atau mesin absensi Fingerspot.{' '}
+                    <a
+                      href="/contoh_attendance_report_detail_fingerspot.xlsx"
+                      download
+                      className="text-indigo-600 hover:text-indigo-800 underline font-medium block mt-1"
+                    >
+                      Download contoh file rekap di sini
+                    </a>
                   </p>
                 </div>
                 <input
@@ -3988,7 +3995,7 @@ const AttendanceRecapSystem = () => {
                   <h3 className="text-xl font-bold text-indigo-800">1. Kehadiran</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
-                      <div key={cat} className="bg-white p-6 rounded-lg shadow">
+                      <div key={cat} className="bg-white p-4 rounded-lg shadow">
                         <h4 className="font-bold text-lg mb-2 text-gray-800">{cat}</h4>
                         <p className="text-sm text-gray-600">Jumlah: {categoryEvaluation[cat].count} orang</p>
                         <p className="text-3xl font-bold text-teal-800 mt-2">
@@ -4006,7 +4013,7 @@ const AttendanceRecapSystem = () => {
                   <h3 className="text-xl font-bold text-indigo-800">2. Kedisiplinan Waktu</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {['Pimpinan', 'Guru', 'Tendik'].map((cat) => (
-                      <div key={cat} className="bg-white p-6 rounded-lg shadow">
+                      <div key={cat} className="bg-white p-4 rounded-lg shadow">
                         <h4 className="font-bold text-lg mb-2 text-gray-800">{cat}</h4>
                         <p className="text-sm text-gray-600">Tepat Waktu</p>
                         <p className="text-3xl font-bold text-green-800 mt-2">
@@ -4046,25 +4053,30 @@ const AttendanceRecapSystem = () => {
                 {/* Rekomendasi */}
                 <div className="bg-white p-6 rounded-lg shadow">
                   <h3 className="text-xl font-bold mb-4 text-teal-700">Rekomendasi</h3>
-                  <div className="space-y-4 text-gray-700">
-                    <div>
-                      <h4 className="font-bold">1. Pimpinan</h4>
-                      <p className="text-sm">Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-bold">1. Pimpinan</h4>
+                        <p className="text-sm">Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.</p>
+                      </div>
+                      <div>
+                        <h4 className="font-bold">2. Guru</h4>
+                        <p className="text-sm">Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.</p>
+                      </div>
+                      <div>
+                        <h4 className="font-bold">3. Tenaga Kependidikan</h4>
+                        <p className="text-sm">Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.</p>
+                      </div>
                     </div>
                     <div>
-                      <h4 className="font-bold">2. Guru</h4>
-                      <p className="text-sm">Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold">3. Tenaga Kependidikan</h4>
-                      <p className="text-sm">Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.</p>
-                    </div>
-                    <div className="mt-4 pl-4 border-l-4 border-teal-500">
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>Meningkatkan pemantauan waktu kedatangan dan kepulangan</li>
-                        <li>Mengadakan pembinaan manajemen waktu</li>
-                        <li>Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu</li>
-                      </ul>
+                      <h4 className="font-bold mb-2">Rekomendasi Umum</h4>
+                      <div className="pl-4 border-l-4 border-teal-500">
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          <li>Meningkatkan pemantauan waktu kedatangan dan kepulangan</li>
+                          <li>Mengadakan pembinaan manajemen waktu</li>
+                          <li>Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
