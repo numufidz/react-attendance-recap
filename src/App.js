@@ -1821,42 +1821,7 @@ const AttendanceRecapSystem = () => {
 
       yPos += 90;
 
-      // REKOMENDASI - REDESIGNED WITH DYNAMIC CONTENT
-      // Fungsi untuk generate rekomendasi spesifik
-      const generateRecommendation = (category, kehadiranPct, disiplinPct) => {
-        const categoryName = category;
-        let kehadiranRec = '';
-        let disiplinRec = '';
-
-        // Rekomendasi Kehadiran
-        if (kehadiranPct >= 91) {
-          kehadiranRec = `Pertahankan kehadiran ${categoryName} yang sudah sangat baik`;
-        } else if (kehadiranPct >= 81) {
-          kehadiranRec = `Tingkatkan kehadiran ${categoryName} untuk mencapai kategori Istimewa`;
-        } else if (kehadiranPct >= 71) {
-          kehadiranRec = `Perbaiki kehadiran ${categoryName} dengan monitoring lebih ketat`;
-        } else {
-          kehadiranRec = `Evaluasi dan pembinaan intensif untuk ${categoryName} yang sering tidak hadir`;
-        }
-
-        // Rekomendasi Disiplin
-        if (disiplinPct >= 91) {
-          disiplinRec = `kedisiplinan waktu sudah sangat baik`;
-        } else if (disiplinPct >= 81) {
-          disiplinRec = `tingkatkan ketepatan waktu`;
-        } else if (disiplinPct >= 71) {
-          disiplinRec = `perbaiki kedisiplinan dengan reminder rutin`;
-        } else {
-          disiplinRec = `terapkan sanksi tegas untuk keterlambatan`;
-        }
-
-        return { kehadiranRec, disiplinRec };
-      };
-
-      const pimpinanRec = generateRecommendation('Pimpinan', categoryEvaluation.Pimpinan.persenKehadiran, categoryEvaluation.Pimpinan.persenTepat);
-      const guruRec = generateRecommendation('Guru', categoryEvaluation.Guru.persenKehadiran, categoryEvaluation.Guru.persenTepat);
-      const tendikRec = generateRecommendation('Tendik', categoryEvaluation.Tendik.persenKehadiran, categoryEvaluation.Tendik.persenTepat);
-
+      // REKOMENDASI - Static Content Matching Tab 2
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(79, 70, 229);
       doc.setLineWidth(2);
@@ -1891,7 +1856,7 @@ const AttendanceRecapSystem = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
       recLeftY += 12;
-      const pimpinanText = `${pimpinanRec.kehadiranRec}, ${pimpinanRec.disiplinRec}.`;
+      const pimpinanText = 'Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.';
       const pimpinanLines = doc.splitTextToSize(pimpinanText, colWidth);
       doc.text(pimpinanLines, leftColX + 5, recLeftY);
       recLeftY += pimpinanLines.length * 11 + 10;
@@ -1905,7 +1870,7 @@ const AttendanceRecapSystem = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
       recLeftY += 12;
-      const guruText = `${guruRec.kehadiranRec}, ${guruRec.disiplinRec}.`;
+      const guruText = 'Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.';
       const guruLines = doc.splitTextToSize(guruText, colWidth);
       doc.text(guruLines, leftColX + 5, recLeftY);
       recLeftY += guruLines.length * 11 + 10;
@@ -1919,7 +1884,7 @@ const AttendanceRecapSystem = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
       recLeftY += 12;
-      const tendikText = `${tendikRec.kehadiranRec}, ${tendikRec.disiplinRec}.`;
+      const tendikText = 'Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.';
       const tendikLines = doc.splitTextToSize(tendikText, colWidth);
       doc.text(tendikLines, leftColX + 5, recLeftY);
 
@@ -1927,20 +1892,20 @@ const AttendanceRecapSystem = () => {
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text('Tindakan Umum:', rightColX, recRightY);
+      doc.text('Rekomendasi Umum:', rightColX, recRightY); // Match Title with Tab 2 "Rekomendasi Umum"
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
       recRightY += 15;
 
-      const tindakan1 = doc.splitTextToSize('• Tingkatkan pemantauan waktu kedatangan dan kepulangan secara real-time', colWidth);
+      const tindakan1 = doc.splitTextToSize('• Meningkatkan pemantauan waktu kedatangan dan kepulangan', colWidth);
       doc.text(tindakan1, rightColX + 5, recRightY);
       recRightY += tindakan1.length * 11 + 8;
 
-      const tindakan2 = doc.splitTextToSize('• Adakan pembinaan manajemen waktu dan kesadaran administrasi', colWidth);
+      const tindakan2 = doc.splitTextToSize('• Mengadakan pembinaan manajemen waktu', colWidth);
       doc.text(tindakan2, rightColX + 5, recRightY);
       recRightY += tindakan2.length * 11 + 8;
 
-      const tindakan3 = doc.splitTextToSize('• Terapkan sistem reward untuk yang disiplin dan sanksi untuk yang sering melanggar', colWidth);
+      const tindakan3 = doc.splitTextToSize('• Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu', colWidth);
       doc.text(tindakan3, rightColX + 5, recRightY);
     }
 
