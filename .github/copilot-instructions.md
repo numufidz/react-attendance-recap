@@ -112,6 +112,24 @@ const normalizeId = (raw) => {
 - Digunakan dalam kalkulasi untuk mengurangi hari kerja yang diharapkan
 - Dikelola melalui form UI (tambah/hapus input tanggal)
 
+## Update Terbaru (Commit a7b2bac)
+
+### Perubahan UI
+1. **Layout Deskripsi Mobile-Friendly**: Mengubah layout kesimpulan dari 3-kolom grid (label : content) menjadi vertikal yang responsif
+   - Mobile: Stack vertikal dengan label penuh lebar
+   - Desktop: Tetap rapi dengan indentasi konten
+   
+2. **Tab Peringkat - Kolom Baru**: 
+   - ❌ Hapus kolom ID dari ketiga tabel peringkat
+   - ✅ Tambah kolom "Jumlah Hari Kerja" setelah kolom Jabatan
+   - Struktur kolom: Peringkat | Nama | Jabatan | **Hari Kerja** | Total [Warna] | Persentase
+   - Update di UI React, PDF export, dan Excel export
+
+### Peningkatan UX
+- Button layout responsif (mobile: di atas judul, desktop: pojok kanan)
+- Button styling dengan color theming per tab (transparent, teal, amber, blue, green, purple)
+- Deskripsi lebih mudah dibaca di mobile dengan pemisahan yang jelas per section
+
 ## Alur Pengembangan
 
 ### Menjalankan Secara Lokal

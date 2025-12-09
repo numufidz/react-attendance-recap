@@ -21,12 +21,12 @@ Sistem rekap absensi profesional untuk evaluasi kehadiran dan kedisiplinan karya
 - Mendukung kategori: Pimpinan, Guru, dan Tendik
 
 ### 3. **Analisis Komprehensif**
-- **Profil Absensi**: Kesimpulan keseluruhan dengan predikat (Unggul, Baik Sekali, Baik, Cukup, Buruk)
+- **Profil Absensi**: Kesimpulan keseluruhan dengan layout vertikal responsif (Analisis Kehadiran, Kesadaran Absensi, Kedisiplinan Waktu, Rekomendasi/Apresiasi)
 - **Evaluasi Kategori**: Analisis per kategori karyawan (Pimpinan, Guru, Tendik)
-- **Peringkat Karyawan**: 
-  - Top 10 Disiplin Waktu
-  - Top 10 Tertib Administrasi
-  - Top 10 Rendah Kesadaran Absensi
+- **Peringkat Karyawan**: Top 10 dengan kolom Hari Kerja untuk konteks
+  - Top 10 Disiplin Waktu (Datang Sebelum Jadwal)
+  - Top 10 Tertib Administrasi (Scan Masuk & Pulang Lengkap)
+  - Top 10 Rendah Kesadaran Absensi (Alfa/Tidak Scan)
 
 ### 4. **Tabel Rekap Detail**
 - **Rekap Mesin**: Data mentah dari mesin absensi
@@ -60,8 +60,9 @@ Sistem rekap absensi profesional untuk evaluasi kehadiran dan kedisiplinan karya
    - Lihat hasil di berbagai tab yang tersedia
 
 5. **Download/Export**
-   - Pilih format yang diinginkan (PDF, Excel, JPG)
-   - Gunakan tombol Copy untuk copy ke clipboard
+   - Klik tombol di pojok kanan atas setiap tab
+   - Format tersedia: PDF, Excel, JPG
+   - Responsive: Tombol otomatis atur posisi untuk mobile & desktop
 
 ## Format Template Jadwal Kerja
 
