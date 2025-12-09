@@ -3378,30 +3378,30 @@ const AttendanceRecapSystem = () => {
           <h3 className="text-2xl font-bold flex items-center gap-2">
             {summaryData.icon} KESIMPULAN PROFIL ABSENSI
           </h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 justify-end flex-nowrap">
             <button
               onClick={downloadSummaryAsPdf}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
             >
-              <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
+              <Download size={14} /> <span>PDF</span>
             </button>
             <button
               onClick={downloadAllTablesAsExcel}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
             >
-              <Download size={16} /> <span className="md:hidden">Excel</span><span className="hidden md:inline">Download Excel (3 Tabel)</span>
+              <Download size={14} /> <span>Excel</span>
             </button>
             <button
               onClick={handleCopySummary}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
             >
-              <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
+              <FileText size={14} /> <span>JPG</span>
             </button>
             <button
               onClick={handleDownloadSummaryJPG}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg hover:bg-opacity-30 flex items-center gap-2 text-sm transition-all border border-white border-opacity-30"
+              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
             >
-              <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
+              <Download size={14} /> <span>JPG</span>
             </button>
           </div>
         </div>
@@ -3932,24 +3932,24 @@ const AttendanceRecapSystem = () => {
                       <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
                       <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
                     </div>
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex gap-2 flex-nowrap justify-end">
                       <button
                         onClick={downloadCategoryAsPdf}
-                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
+                        <Download size={14} /> <span>PDF</span>
                       </button>
                       <button
                         onClick={handleCopyCategory}
-                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
+                        <FileText size={14} /> <span>JPG</span>
                       </button>
                       <button
                         onClick={handleDownloadCategoryJPG}
-                        className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
+                        <Download size={14} /> <span>JPG</span>
                       </button>
                     </div>
                   </div>
@@ -4060,24 +4060,24 @@ const AttendanceRecapSystem = () => {
                       </h3>
                       <p className="text-amber-700">Ranking berdasarkan disiplin waktu dan ketertiban administrasi</p>
                     </div>
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex gap-2 flex-nowrap justify-end">
                       <button
                         onClick={downloadRankingAsPdf}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <Download size={16} /> <span className="md:hidden">PDF</span><span className="hidden md:inline">Download PDF</span>
+                        <Download size={14} /> <span>PDF</span>
                       </button>
                       <button
                         onClick={handleCopyRanking}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <FileText size={16} /> <span className="md:hidden">Copy JPG</span><span className="hidden md:inline">Copy JPG</span>
+                        <FileText size={14} /> <span>JPG</span>
                       </button>
                       <button
                         onClick={handleDownloadRankingJPG}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <Download size={16} /> <span className="md:hidden">JPG</span><span className="hidden md:inline">Download JPG</span>
+                        <Download size={14} /> <span>JPG</span>
                       </button>
                     </div>
                   </div>
@@ -4247,20 +4247,20 @@ const AttendanceRecapSystem = () => {
                     <h4 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       📊 Panduan Lengkap 3 Tabel Rekap
                     </h4>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-nowrap justify-end">
                       <button
                         onClick={handleCopyPanduan}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 shadow-sm hover:shadow-md transition-all text-sm"
+                        className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <FileText size={16} />
-                        Copy JPG
+                        <FileText size={14} />
+                        JPG
                       </button>
                       <button
                         onClick={handleDownloadPanduan}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm hover:shadow-md transition-all text-sm"
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all text-xs sm:text-sm whitespace-nowrap"
                       >
-                        <Download size={16} />
-                        Download JPG
+                        <Download size={14} />
+                        JPG
                       </button>
                     </div>
                   </div>
@@ -4647,26 +4647,26 @@ const AttendanceRecapSystem = () => {
                           </h3>
                           <p className="text-sm text-blue-600">Data mentah dari mesin fingerprint</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-nowrap justify-end">
                           <button
                             onClick={() => copyTableToClipboard('tabel1')}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Copy Tabel ke Excel
+                            <FileText size={14} /> Excel
                           </button>
                           <button
                             onClick={() =>
                               downloadTableAsExcel('tabel1', 'rekap_mesin')
                             }
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download Excel
+                            <Download size={14} /> Excel
                           </button>
                           <button
                             onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download PDF
+                            <Download size={14} /> PDF
                           </button>
                         </div>
                       </div>
@@ -4884,28 +4884,28 @@ const AttendanceRecapSystem = () => {
                           </h3>
                           <p className="text-sm text-green-600">Evaluasi ketepatan waktu kehadiran</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-nowrap justify-end">
                           <button
                             onClick={() => copyTableToClipboard('tabel2')}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Copy Tabel ke Excel
+                            <FileText size={14} /> Excel
                           </button>
                           <button
                             onClick={() =>
                               downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
                             }
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download Excel
+                            <Download size={14} /> Excel
                           </button>
                           <button
                             onClick={() =>
                               downloadAsPdf('tabel2', 'kedisiplinan_waktu')
                             }
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download PDF
+                            <Download size={14} /> PDF
                           </button>
                         </div>
                       </div>
@@ -5130,28 +5130,28 @@ const AttendanceRecapSystem = () => {
                           </h3>
                           <p className="text-sm text-purple-600">Status kehadiran berdasarkan jadwal</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-nowrap justify-end">
                           <button
                             onClick={() => copyTableToClipboard('tabel3')}
-                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Copy Tabel ke Excel
+                            <FileText size={14} /> Excel
                           </button>
                           <button
                             onClick={() =>
                               downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
                             }
-                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download Excel
+                            <Download size={14} /> Excel
                           </button>
                           <button
                             onClick={() =>
                               downloadAsPdf('tabel3', 'evaluasi_kehadiran')
                             }
-                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
                           >
-                            <Download size={16} /> Download PDF
+                            <Download size={14} /> PDF
                           </button>
                         </div>
                       </div>
