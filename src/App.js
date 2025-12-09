@@ -434,16 +434,16 @@ const AttendanceRecapSystem = () => {
 
     const disiplinData = rankingData.topDisiplin.map((emp, idx) => [
       idx + 1,
-      emp.id,
       emp.name,
       emp.position,
+      emp.hariKerja,
       emp.hijau,
       `${emp.persenHijau}%`,
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Rank', 'ID', 'Nama', 'Jabatan', 'Total Hijau', '%']],
+      head: [['Rank', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Hijau', '%']],
       body: disiplinData,
       theme: 'grid',
       headStyles: { fillColor: [34, 197, 94] },
@@ -460,16 +460,16 @@ const AttendanceRecapSystem = () => {
 
     const tertibData = rankingData.topTertib.map((emp, idx) => [
       idx + 1,
-      emp.id,
       emp.name,
       emp.position,
+      emp.hariKerja,
       emp.biru,
       `${emp.persenBiru}%`,
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Rank', 'ID', 'Nama', 'Jabatan', 'Total Biru', '%']],
+      head: [['Rank', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Biru', '%']],
       body: tertibData,
       theme: 'grid',
       headStyles: { fillColor: [59, 130, 246] },
@@ -486,16 +486,16 @@ const AttendanceRecapSystem = () => {
 
     const rendahData = rankingData.topRendah.map((emp, idx) => [
       idx + 1,
-      emp.id,
       emp.name,
       emp.position,
+      emp.hariKerja,
       emp.merah,
       `${emp.persenMerah}%`,
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Rank', 'ID', 'Nama', 'Jabatan', 'Total Merah', '%']],
+      head: [['Rank', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Merah', '%']],
       body: rendahData,
       theme: 'grid',
       headStyles: { fillColor: [239, 68, 68] },
@@ -3073,16 +3073,16 @@ const AttendanceRecapSystem = () => {
 
       const table1Data = rankingData.topDisiplin.map((emp, idx) => [
         idx + 1,
-        emp.id,
         emp.name,
         emp.position,
+        emp.hariKerja,
         emp.hijau,
         emp.persenHijau + '%',
       ]);
 
       autoTable(doc, {
         head: [
-          ['Peringkat', 'ID', 'Nama', 'Jabatan', 'Total Hijau', 'Persentase'],
+          ['Peringkat', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Hijau', 'Persentase'],
         ],
         body: table1Data,
         startY: yPos,
@@ -3095,9 +3095,9 @@ const AttendanceRecapSystem = () => {
         styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
           0: { halign: 'center', cellWidth: 25 },
-          1: { halign: 'center', cellWidth: 35 },
+          1: { cellWidth: 'auto' },
           2: { cellWidth: 'auto' },
-          3: { cellWidth: 'auto' },
+          3: { halign: 'center', cellWidth: 30 },
           4: { halign: 'center', cellWidth: 35 },
           5: { halign: 'center', cellWidth: 40 },
         },
@@ -3127,16 +3127,16 @@ const AttendanceRecapSystem = () => {
 
       const table2Data = rankingData.topTertib.map((emp, idx) => [
         idx + 1,
-        emp.id,
         emp.name,
         emp.position,
+        emp.hariKerja,
         emp.biru,
         emp.persenBiru + '%',
       ]);
 
       autoTable(doc, {
         head: [
-          ['Peringkat', 'ID', 'Nama', 'Jabatan', 'Total Biru', 'Persentase'],
+          ['Peringkat', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Biru', 'Persentase'],
         ],
         body: table2Data,
         startY: yPos,
@@ -3149,9 +3149,9 @@ const AttendanceRecapSystem = () => {
         styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
           0: { halign: 'center', cellWidth: 25 },
-          1: { halign: 'center', cellWidth: 35 },
+          1: { cellWidth: 'auto' },
           2: { cellWidth: 'auto' },
-          3: { cellWidth: 'auto' },
+          3: { halign: 'center', cellWidth: 30 },
           4: { halign: 'center', cellWidth: 35 },
           5: { halign: 'center', cellWidth: 40 },
         },
@@ -3181,16 +3181,16 @@ const AttendanceRecapSystem = () => {
 
       const table3Data = rankingData.topRendah.map((emp, idx) => [
         idx + 1,
-        emp.id,
         emp.name,
         emp.position,
+        emp.hariKerja,
         emp.merah,
         emp.persenMerah + '%',
       ]);
 
       autoTable(doc, {
         head: [
-          ['Peringkat', 'ID', 'Nama', 'Jabatan', 'Total Merah', 'Persentase'],
+          ['Peringkat', 'Nama', 'Jabatan', 'Hari Kerja', 'Total Merah', 'Persentase'],
         ],
         body: table3Data,
         startY: yPos,
@@ -3203,9 +3203,9 @@ const AttendanceRecapSystem = () => {
         styles: { fontSize: 7, cellPadding: 2.5 },
         columnStyles: {
           0: { halign: 'center', cellWidth: 25 },
-          1: { halign: 'center', cellWidth: 35 },
+          1: { cellWidth: 'auto' },
           2: { cellWidth: 'auto' },
-          3: { cellWidth: 'auto' },
+          3: { halign: 'center', cellWidth: 30 },
           4: { halign: 'center', cellWidth: 35 },
           5: { halign: 'center', cellWidth: 40 },
         },
@@ -3363,8 +3363,46 @@ const AttendanceRecapSystem = () => {
     }, 500);
   };
 
+  // Komponen Helper untuk Action Buttons (Responsif Mobile)
+  const ActionButtonGroup = ({ buttons, colorClass = 'indigo' }) => {
+    const colorMap = {
+      'indigo': 'bg-indigo-600 hover:bg-indigo-700 text-white',
+      'teal': 'bg-teal-600 hover:bg-teal-700 text-white',
+      'amber': 'bg-amber-600 hover:bg-amber-700 text-white',
+      'blue': 'bg-blue-600 hover:bg-blue-700 text-white',
+      'green': 'bg-green-600 hover:bg-green-700 text-white',
+      'purple': 'bg-purple-600 hover:bg-purple-700 text-white',
+      'transparent': 'bg-white bg-opacity-20 hover:bg-opacity-30 text-white border border-white border-opacity-30',
+    };
+    
+    const baseClass = colorMap[colorClass] || colorMap['indigo'];
+    
+    return (
+      <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+        {buttons.map((btn, idx) => (
+          <button
+            key={idx}
+            onClick={btn.onClick}
+            className={`${baseClass} px-3 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap`}
+            title={btn.title}
+          >
+            {btn.icon && <btn.icon size={16} />}
+            {btn.label && <span className="font-medium">{btn.label}</span>}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   const renderSummary = () => {
     if (!summaryData) return null;
+
+    const summaryButtons = [
+      { icon: Download, label: 'PDF', title: 'Download PDF', onClick: downloadSummaryAsPdf },
+      { icon: Download, label: 'Excel', title: 'Download Excel', onClick: downloadAllTablesAsExcel },
+      { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopySummary },
+      { icon: Download, label: 'JPG', title: 'Download JPG', onClick: handleDownloadSummaryJPG },
+    ];
 
     return (
       <div
@@ -3374,35 +3412,13 @@ const AttendanceRecapSystem = () => {
           summaryData.warna
         }
       >
-        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-          <h3 className="text-2xl font-bold flex items-center gap-2">
+        {/* Tombol dan Judul - Responsive */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+          <h3 className="text-2xl font-bold flex items-center gap-2 order-2 md:order-1">
             {summaryData.icon} KESIMPULAN PROFIL ABSENSI
           </h3>
-          <div className="flex gap-2 justify-end flex-nowrap">
-            <button
-              onClick={downloadSummaryAsPdf}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Download size={14} /> <span>PDF</span>
-            </button>
-            <button
-              onClick={downloadAllTablesAsExcel}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Download size={14} /> <span>Excel</span>
-            </button>
-            <button
-              onClick={handleCopySummary}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <FileText size={14} /> <span>JPG</span>
-            </button>
-            <button
-              onClick={handleDownloadSummaryJPG}
-              className="bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-md hover:bg-opacity-30 flex items-center justify-center gap-1.5 transition-all border border-white border-opacity-30 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <Download size={14} /> <span>JPG</span>
-            </button>
+          <div className="order-1 md:order-2 w-full md:w-auto">
+            <ActionButtonGroup buttons={summaryButtons} colorClass="transparent" />
           </div>
         </div>
         {/* MODIFIKASI DISINI: 
@@ -3503,13 +3519,12 @@ const AttendanceRecapSystem = () => {
             <strong>{summaryData.predikat}</strong>.
           </p>
 
-          {/* Layout 3 Kolom dengan Grid */}
-          <div className="space-y-3">
+          {/* Layout Vertikal untuk Mobile & Desktop */}
+          <div className="space-y-4">
             {/* Analisis Kehadiran */}
-            <div className="grid grid-cols-[160px_auto_1fr] gap-2 opacity-90">
-              <div className="font-bold">Analisis Kehadiran</div>
-              <div>:</div>
-              <div className="flex-1">
+            <div className="opacity-90">
+              <div className="font-bold mb-1">Analisis Kehadiran</div>
+              <div className="ml-0 md:ml-4">
                 {summaryData.persentaseKehadiran >= 96 &&
                   'Tingkat kehadiran sangat luar biasa dengan konsistensi kehadiran hampir sempurna.'}
                 {summaryData.persentaseKehadiran >= 91 &&
@@ -3530,10 +3545,9 @@ const AttendanceRecapSystem = () => {
             </div>
 
             {/* Kesadaran Absensi */}
-            <div className="grid grid-cols-[160px_auto_1fr] gap-2 opacity-90">
-              <div className="font-bold">Kesadaran Absensi</div>
-              <div>:</div>{' '}
-              <div className="flex-1">
+            <div className="opacity-90">
+              <div className="font-bold mb-1">Kesadaran Absensi</div>
+              <div className="ml-0 md:ml-4">
                 {summaryData.persentaseKehadiran >= 96 &&
                   'Ketertiban scan masuk-pulang sangat sempurna. Hampir semua guru & karyawan konsisten melakukan scan lengkap.'}
                 {summaryData.persentaseKehadiran >= 91 &&
@@ -3554,10 +3568,9 @@ const AttendanceRecapSystem = () => {
             </div>
 
             {/* Kedisiplinan Waktu */}
-            <div className="grid grid-cols-[160px_auto_1fr] gap-2 opacity-90">
-              <div className="font-bold">Kedisiplinan Waktu</div>
-              <div>:</div>
-              <div className="flex-1">
+            <div className="opacity-90">
+              <div className="font-bold mb-1">Kedisiplinan Waktu</div>
+              <div className="ml-0 md:ml-4">
                 {summaryData.persentaseKehadiran >= 96 &&
                   'Ketepatan waktu sangat sempurna. Hampir semua datang sebelum jadwal yang ditentukan.'}
                 {summaryData.persentaseKehadiran >= 91 &&
@@ -3578,14 +3591,13 @@ const AttendanceRecapSystem = () => {
             </div>
 
             {/* Rekomendasi/Apresiasi */}
-            <div className="grid grid-cols-[160px_auto_1fr] gap-2 opacity-90">
-              <div className="font-bold">
+            <div className="opacity-90">
+              <div className="font-bold mb-1">
                 {summaryData.persentaseKehadiran >= 91
                   ? 'Apresiasi'
                   : 'Rekomendasi'}
               </div>
-              <div>:</div>
-              <div className="flex-1">
+              <div className="ml-0 md:ml-4">
                 {summaryData.persentaseKehadiran >= 96 &&
                   'Prestasi luar biasa! Pertahankan kedisiplinan sempurna ini dan jadilah teladan bagi yang lain.'}
                 {summaryData.persentaseKehadiran >= 91 &&
@@ -3926,32 +3938,21 @@ const AttendanceRecapSystem = () => {
                 ref={categoryRef}
                 className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-indigo-50 to-teal-100 border border-indigo-200"
               >
-                <div className="mb-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
-                      <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
-                    </div>
-                    <div className="flex gap-2 flex-nowrap justify-end">
-                      <button
-                        onClick={downloadCategoryAsPdf}
-                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <Download size={14} /> <span>PDF</span>
-                      </button>
-                      <button
-                        onClick={handleCopyCategory}
-                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <FileText size={14} /> <span>JPG</span>
-                      </button>
-                      <button
-                        onClick={handleDownloadCategoryJPG}
-                        className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <Download size={14} /> <span>JPG</span>
-                      </button>
-                    </div>
+                {/* Judul dan Tombol - Responsive */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+                  <div className="order-2 md:order-1">
+                    <h2 className="text-3xl font-bold text-indigo-900 mb-2">📊 Evaluasi Berdasarkan Kategori</h2>
+                    <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
+                  </div>
+                  <div className="order-1 md:order-2 w-full md:w-auto">
+                    <ActionButtonGroup 
+                      buttons={[
+                        { icon: Download, label: 'PDF', title: 'Download PDF', onClick: downloadCategoryAsPdf },
+                        { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyCategory },
+                        { icon: Download, label: 'JPG', title: 'Download JPG', onClick: handleDownloadCategoryJPG },
+                      ]}
+                      colorClass="teal"
+                    />
                   </div>
                 </div>
 
@@ -4052,34 +4053,23 @@ const AttendanceRecapSystem = () => {
                 ref={rankingRef}
                 className="p-8 rounded-xl shadow-lg bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200"
               >
-                <div className="mb-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-3xl font-bold text-amber-900 mb-2 flex items-center gap-2">
-                        🏆 Peringkat Guru & Karyawan
-                      </h3>
-                      <p className="text-amber-700">Ranking berdasarkan disiplin waktu dan ketertiban administrasi</p>
-                    </div>
-                    <div className="flex gap-2 flex-nowrap justify-end">
-                      <button
-                        onClick={downloadRankingAsPdf}
-                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <Download size={14} /> <span>PDF</span>
-                      </button>
-                      <button
-                        onClick={handleCopyRanking}
-                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <FileText size={14} /> <span>JPG</span>
-                      </button>
-                      <button
-                        onClick={handleDownloadRankingJPG}
-                        className="bg-amber-600 text-white px-3 py-1.5 rounded-md hover:bg-amber-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <Download size={14} /> <span>JPG</span>
-                      </button>
-                    </div>
+                {/* Judul dan Tombol - Responsive */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+                  <div className="order-2 md:order-1">
+                    <h3 className="text-3xl font-bold text-amber-900 mb-2 flex items-center gap-2">
+                      🏆 Peringkat Guru & Karyawan
+                    </h3>
+                    <p className="text-amber-700">Ranking berdasarkan disiplin waktu dan ketertiban administrasi</p>
+                  </div>
+                  <div className="order-1 md:order-2 w-full md:w-auto">
+                    <ActionButtonGroup 
+                      buttons={[
+                        { icon: Download, label: 'PDF', title: 'Download PDF', onClick: downloadRankingAsPdf },
+                        { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyRanking },
+                        { icon: Download, label: 'JPG', title: 'Download JPG', onClick: handleDownloadRankingJPG },
+                      ]}
+                      colorClass="amber"
+                    />
                   </div>
                 </div>
 
@@ -4097,9 +4087,9 @@ const AttendanceRecapSystem = () => {
                         <thead className="bg-green-600 text-white">
                           <tr>
                             <th className="px-3 py-2 text-center w-20">Peringkat</th>
-                            <th className="px-3 py-2 text-center w-24">ID</th>
                             <th className="px-3 py-2 text-left w-64">Nama</th>
                             <th className="px-3 py-2 text-left w-48">Jabatan</th>
+                            <th className="px-3 py-2 text-center w-28">Hari Kerja</th>
                             <th className="px-3 py-2 text-center w-28">
                               Total Hijau
                             </th>
@@ -4115,12 +4105,12 @@ const AttendanceRecapSystem = () => {
                               <td className="px-3 py-2 text-center font-bold text-green-700">
                                 {idx + 1}
                               </td>
-                              <td className="px-3 py-2 text-center text-gray-700">
-                                {emp.id}
-                              </td>
                               <td className="px-3 py-2 text-gray-800">{emp.name}</td>
                               <td className="px-3 py-2 text-gray-600 text-sm">
                                 {emp.position}
+                              </td>
+                              <td className="px-3 py-2 text-center text-gray-700">
+                                {emp.hariKerja}
                               </td>
                               <td className="px-3 py-2 text-center font-bold text-green-600">
                                 {emp.hijau}
@@ -4148,9 +4138,9 @@ const AttendanceRecapSystem = () => {
                         <thead className="bg-blue-600 text-white">
                           <tr>
                             <th className="px-3 py-2 text-center w-20">Peringkat</th>
-                            <th className="px-3 py-2 text-center w-24">ID</th>
                             <th className="px-3 py-2 text-left w-64">Nama</th>
                             <th className="px-3 py-2 text-left w-48">Jabatan</th>
+                            <th className="px-3 py-2 text-center w-28">Hari Kerja</th>
                             <th className="px-3 py-2 text-center w-28">Total Biru</th>
                             <th className="px-3 py-2 text-center w-28">Persentase</th>
                           </tr>
@@ -4164,12 +4154,12 @@ const AttendanceRecapSystem = () => {
                               <td className="px-3 py-2 text-center font-bold text-blue-700">
                                 {idx + 1}
                               </td>
-                              <td className="px-3 py-2 text-center text-gray-700">
-                                {emp.id}
-                              </td>
                               <td className="px-3 py-2 text-gray-800">{emp.name}</td>
                               <td className="px-3 py-2 text-gray-600 text-sm">
                                 {emp.position}
+                              </td>
+                              <td className="px-3 py-2 text-center text-gray-700">
+                                {emp.hariKerja}
                               </td>
                               <td className="px-3 py-2 text-center font-bold text-blue-600">
                                 {emp.biru}
@@ -4197,9 +4187,9 @@ const AttendanceRecapSystem = () => {
                         <thead className="bg-red-600 text-white">
                           <tr>
                             <th className="px-3 py-2 text-center w-20">Peringkat</th>
-                            <th className="px-3 py-2 text-center w-24">ID</th>
                             <th className="px-3 py-2 text-left w-64">Nama</th>
                             <th className="px-3 py-2 text-left w-48">Jabatan</th>
+                            <th className="px-3 py-2 text-center w-28">Hari Kerja</th>
                             <th className="px-3 py-2 text-center w-28">
                               Total Merah
                             </th>
@@ -4215,12 +4205,12 @@ const AttendanceRecapSystem = () => {
                               <td className="px-3 py-2 text-center font-bold text-red-700">
                                 {idx + 1}
                               </td>
-                              <td className="px-3 py-2 text-center text-gray-700">
-                                {emp.id}
-                              </td>
                               <td className="px-3 py-2 text-gray-800">{emp.name}</td>
                               <td className="px-3 py-2 text-gray-600 text-sm">
                                 {emp.position}
+                              </td>
+                              <td className="px-3 py-2 text-center text-gray-700">
+                                {emp.hariKerja}
                               </td>
                               <td className="px-3 py-2 text-center font-bold text-red-600">
                                 {emp.merah}
@@ -4243,25 +4233,19 @@ const AttendanceRecapSystem = () => {
                 className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl"
               >
                 <div className="max-w-6xl mx-auto p-6 bg-gray-50">
-                  <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-                    <h4 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  {/* Judul dan Tombol - Responsive */}
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+                    <h4 className="text-2xl font-bold text-gray-800 flex items-center gap-2 order-2 md:order-1">
                       📊 Panduan Lengkap 3 Tabel Rekap
                     </h4>
-                    <div className="flex gap-2 flex-nowrap justify-end">
-                      <button
-                        onClick={handleCopyPanduan}
-                        className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <FileText size={14} />
-                        JPG
-                      </button>
-                      <button
-                        onClick={handleDownloadPanduan}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        <Download size={14} />
-                        JPG
-                      </button>
+                    <div className="order-1 md:order-2 w-full md:w-auto">
+                      <ActionButtonGroup 
+                        buttons={[
+                          { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyPanduan },
+                          { icon: Download, label: 'JPG', title: 'Download JPG', onClick: handleDownloadPanduan },
+                        ]}
+                        colorClass="blue"
+                      />
                     </div>
                   </div>
 
@@ -4639,35 +4623,24 @@ const AttendanceRecapSystem = () => {
               <>
                 <div style={{ display: activeRecapTab === 'table1' ? 'block' : 'none' }}>
                   <div>
+                    {/* Judul dan Tombol - Responsive */}
                     <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-xl mb-4 shadow-sm border border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                        <div className="order-2 md:order-1">
                           <h3 className="text-2xl font-bold text-blue-800 mb-1">
                             1. Rekap Mesin
                           </h3>
                           <p className="text-sm text-blue-600">Data mentah dari mesin fingerprint</p>
                         </div>
-                        <div className="flex gap-2 flex-nowrap justify-end">
-                          <button
-                            onClick={() => copyTableToClipboard('tabel1')}
-                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <FileText size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadTableAsExcel('tabel1', 'rekap_mesin')
-                            }
-                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() => downloadAsPdf('tabel1', 'rekap_mesin')}
-                            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> PDF
-                          </button>
+                        <div className="order-1 md:order-2 w-full md:w-auto">
+                          <ActionButtonGroup 
+                            buttons={[
+                              { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel1') },
+                              { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel1', 'rekap_mesin') },
+                              { icon: Download, label: 'PDF', title: 'Download PDF', onClick: () => downloadAsPdf('tabel1', 'rekap_mesin') },
+                            ]}
+                            colorClass="blue"
+                          />
                         </div>
                       </div>
                     </div>
@@ -4876,37 +4849,24 @@ const AttendanceRecapSystem = () => {
                 </div>
                 <div style={{ display: activeRecapTab === 'table2' ? 'block' : 'none' }}>
                   <div>
+                    {/* Judul dan Tombol - Responsive */}
                     <div className="bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-xl mb-4 shadow-sm border border-green-200">
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                        <div className="order-2 md:order-1">
                           <h3 className="text-2xl font-bold text-green-800 mb-1">
                             2. Kedisiplinan Waktu
                           </h3>
                           <p className="text-sm text-green-600">Evaluasi ketepatan waktu kehadiran</p>
                         </div>
-                        <div className="flex gap-2 flex-nowrap justify-end">
-                          <button
-                            onClick={() => copyTableToClipboard('tabel2')}
-                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <FileText size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadTableAsExcel('tabel2', 'kedisiplinan_waktu')
-                            }
-                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadAsPdf('tabel2', 'kedisiplinan_waktu')
-                            }
-                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> PDF
-                          </button>
+                        <div className="order-1 md:order-2 w-full md:w-auto">
+                          <ActionButtonGroup 
+                            buttons={[
+                              { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel2') },
+                              { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel2', 'kedisiplinan_waktu') },
+                              { icon: Download, label: 'PDF', title: 'Download PDF', onClick: () => downloadAsPdf('tabel2', 'kedisiplinan_waktu') },
+                            ]}
+                            colorClass="green"
+                          />
                         </div>
                       </div>
                     </div>
@@ -5122,37 +5082,24 @@ const AttendanceRecapSystem = () => {
                 </div>
                 <div style={{ display: activeRecapTab === 'table3' ? 'block' : 'none' }}>
                   <div>
+                    {/* Judul dan Tombol - Responsive */}
                     <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-5 rounded-xl mb-4 shadow-sm border border-purple-200">
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                        <div className="order-2 md:order-1">
                           <h3 className="text-2xl font-bold text-purple-800 mb-1">
                             3. Evaluasi Kehadiran
                           </h3>
                           <p className="text-sm text-purple-600">Status kehadiran berdasarkan jadwal</p>
                         </div>
-                        <div className="flex gap-2 flex-nowrap justify-end">
-                          <button
-                            onClick={() => copyTableToClipboard('tabel3')}
-                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <FileText size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadTableAsExcel('tabel3', 'evaluasi_kehadiran')
-                            }
-                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> Excel
-                          </button>
-                          <button
-                            onClick={() =>
-                              downloadAsPdf('tabel3', 'evaluasi_kehadiran')
-                            }
-                            className="bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md text-xs sm:text-sm whitespace-nowrap"
-                          >
-                            <Download size={14} /> PDF
-                          </button>
+                        <div className="order-1 md:order-2 w-full md:w-auto">
+                          <ActionButtonGroup 
+                            buttons={[
+                              { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel3') },
+                              { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel3', 'evaluasi_kehadiran') },
+                              { icon: Download, label: 'PDF', title: 'Download PDF', onClick: () => downloadAsPdf('tabel3', 'evaluasi_kehadiran') },
+                            ]}
+                            colorClass="purple"
+                          />
                         </div>
                       </div>
                     </div>

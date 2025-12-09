@@ -6,7 +6,7 @@ File ini berisi catatan dan instruksi khusus untuk Agen AI yang bekerja pada pro
 
 ## Deskripsi
 
-Sistem profesional untuk evaluasi absensi karyawan berdasarkan data mesin fingerprint dan jadwal kerja. Menyediakan analisis kedisiplinan, rekap mentah, dan peringkat performa secara akurat dan efisien.
+Sistem rekap absensi profesional untuk evaluasi kehadiran dan kedisiplinan karyawan menggunakan data mesin fingerprint dan jadwal kerja. Menyajikan rekap mentah, analisis kedisiplinan, perhitungan keterlambatan, serta peringkat kinerja yang akurat, transparan, dan mudah diakses.
 
 ## Fitur Utama
 
