@@ -14,7 +14,7 @@ const normalizeId = (raw) => {
 
 const AttendanceRecapSystem = () => {
   // License state
-  const [isActivated, setIsActivated] = useState(true);
+  const [isActivated, setIsActivated] = useState(false);
   const [licenseInfo, setLicenseInfo] = useState(null);
   const [isValidatingLicense, setIsValidatingLicense] = useState(true);
   const [licenseError, setLicenseError] = useState('');
