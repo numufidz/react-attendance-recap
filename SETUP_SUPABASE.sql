@@ -4,7 +4,7 @@
 -- ==============================================
 -- TABEL 1: LICENSES - Menyimpan informasi lisensi
 -- ==============================================
-CREATE TABLE licenses (
+CREATE TABLE IF NOT EXISTS licenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   license_key VARCHAR(50) UNIQUE NOT NULL,
   school_name VARCHAR(255) NOT NULL,
@@ -22,14 +22,14 @@ CREATE TABLE licenses (
 );
 
 -- Tambahkan index untuk mempercepat query
-CREATE INDEX idx_licenses_license_key ON licenses(license_key);
-CREATE INDEX idx_licenses_status ON licenses(status);
-CREATE INDEX idx_licenses_email ON licenses(email);
+CREATE INDEX IF NOT EXISTS idx_licenses_license_key ON licenses(license_key);
+CREATE INDEX IF NOT EXISTS idx_licenses_status ON licenses(status);
+CREATE INDEX IF NOT EXISTS idx_licenses_email ON licenses(email);
 
 -- ==============================================
 -- TABEL 2: OTP_CODES - Menyimpan kode OTP untuk aktivasi
 -- ==============================================
-CREATE TABLE otp_codes (
+CREATE TABLE IF NOT EXISTS otp_codes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   license_key VARCHAR(50) NOT NULL,
   otp_code VARCHAR(6) NOT NULL,
@@ -46,13 +46,13 @@ CREATE TABLE otp_codes (
 );
 
 -- Tambahkan index
-CREATE INDEX idx_otp_codes_license_key ON otp_codes(license_key);
-CREATE INDEX idx_otp_codes_expires_at ON otp_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_otp_codes_license_key ON otp_codes(license_key);
+CREATE INDEX IF NOT EXISTS idx_otp_codes_expires_at ON otp_codes(expires_at);
 
 -- ==============================================
 -- TABEL 3: ACTIVATION_LOGS - Audit trail untuk tracking aktivasi
 -- ==============================================
-CREATE TABLE activation_logs (
+CREATE TABLE IF NOT EXISTS activation_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   license_key VARCHAR(50) NOT NULL,
   action VARCHAR(50) NOT NULL, -- otp_sent, otp_verified, license_activated, license_revoked
@@ -67,8 +67,8 @@ CREATE TABLE activation_logs (
 );
 
 -- Tambahkan index
-CREATE INDEX idx_activation_logs_license_key ON activation_logs(license_key);
-CREATE INDEX idx_activation_logs_action ON activation_logs(action);
+CREATE INDEX IF NOT EXISTS idx_activation_logs_license_key ON activation_logs(license_key);
+CREATE INDEX IF NOT EXISTS idx_activation_logs_action ON activation_logs(action);
 
 -- ==============================================
 -- CONTOH DATA - Untuk Testing
@@ -89,7 +89,8 @@ INSERT INTO licenses (license_key, school_name, email, status, expires_at) VALUE
     'test@example.com',
     'pending',
     NOW() + INTERVAL '30 days'
-  );
+  )
+ON CONFLICT (license_key) DO NOTHING;
 
 -- ==============================================
 -- RLS (ROW LEVEL SECURITY) - OPTIONAL

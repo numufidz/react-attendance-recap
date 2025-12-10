@@ -1,0 +1,22 @@
+# Konfigurasi untuk Netlify
+
+[build]
+  # Perintah untuk membangun proyek Anda
+  command = "npm run build"
+  
+  # Direktori tempat fungsi serverless Anda berada
+  functions = "netlify/functions"
+  
+  # Direktori output setelah build
+  publish = "build"
+
+# Aturan redirect agar API dan routing React berfungsi dengan benar
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
