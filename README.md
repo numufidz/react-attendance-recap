@@ -1,5 +1,20 @@
 # Sistem Rekap Absensi - MTs. An-Nur Bululawang
 
+## ⚠️ Sistem Lisensi
+Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP untuk keamanan dan kontrol akses multi-tenant.
+
+### Aktivasi Lisensi
+1. **Buka aplikasi** → Akan muncul layar aktivasi
+2. **Masukkan License Key** → Format: XXXX-XXXX-XXXX-XXXX
+3. **Isi data sekolah** → Nama sekolah dan email
+4. **Terima OTP** → Kode akan dikirim ke email atau ditampilkan di console
+5. **Verifikasi OTP** → Masukkan 6-digit kode untuk unlock aplikasi
+
+### Lihat Dokumentasi Lengkap
+- **Setup & Konfigurasi**: Baca `LICENSING_SETUP.md`
+- **SQL Database**: Lihat `SETUP_SUPABASE.sql`
+- **Environment Variables**: Lihat `.env.local.example`
+
 ## Deskripsi
 
 Sistem profesional untuk evaluasi absensi karyawan berdasarkan data mesin fingerprint dan jadwal kerja. Menyediakan analisis kedisiplinan, rekap mentah, dan peringkat performa secara akurat dan efisien.

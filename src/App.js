@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Download, FileText, Loader, Trash2, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas'; // Install dulu: npm install html2canvas
+import html2canvas from 'html2canvas';
+import ActivationScreen from './ActivationScreen';
 
 const normalizeId = (raw) => {
   const s = String(raw || '').trim();
@@ -12,6 +13,13 @@ const normalizeId = (raw) => {
 };
 
 const AttendanceRecapSystem = () => {
+  // License state
+  const [isActivated, setIsActivated] = useState(true);
+  const [licenseInfo, setLicenseInfo] = useState(null);
+  const [isValidatingLicense, setIsValidatingLicense] = useState(true);
+  const [licenseError, setLicenseError] = useState('');
+
+  // Data state
   const [attendanceData, setAttendanceData] = useState([]);
   const [scheduleData, setScheduleData] = useState([]);
   const [recapData, setRecapData] = useState(null);
@@ -30,6 +38,67 @@ const AttendanceRecapSystem = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [newHoliday, setNewHoliday] = useState('');
+
+  // Check license saat component mount
+  useEffect(() => {
+    validateLicenseOnStartup();
+  }, []);
+
+  const validateLicenseOnStartup = async () => {
+    setIsValidatingLicense(true);
+    setLicenseError('');
+
+    try {
+      const storedLicense = localStorage.getItem('licenseToken');
+
+      if (!storedLicense) {
+        setIsValidatingLicense(false);
+        return;
+      }
+
+      // Decode stored license
+      const decodedLicense = JSON.parse(atob(storedLicense));
+      const { token } = decodedLicense;
+
+      // Validate token dengan backend
+      const response = await fetch('/.netlify/functions/validate-license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsActivated(true);
+        setLicenseInfo(data);
+      } else {
+        // Token invalid atau expired
+        localStorage.removeItem('licenseToken');
+        setLicenseError(data.error || 'Lisensi tidak valid');
+      }
+    } catch (error) {
+      console.error('License validation error:', error);
+      setLicenseError('Gagal validasi lisensi. Silakan aktivasi ulang.');
+    } finally {
+      setIsValidatingLicense(false);
+    }
+  };
+
+  const handleActivationSuccess = (activationData) => {
+    setLicenseInfo({
+      schoolName: activationData.schoolName,
+      expiresAt: activationData.expiresAt,
+      daysRemaining: Math.ceil((new Date(activationData.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+    });
+    setIsActivated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('licenseToken');
+    setIsActivated(false);
+    setLicenseInfo(null);
+  };
 
   const panduanRef = React.useRef(null);
 
@@ -3626,6 +3695,25 @@ const AttendanceRecapSystem = () => {
     );
   };
 
+  // Tampilkan loading saat validasi license startup
+  if (isValidatingLicense) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-md">
+          <Loader className="animate-spin mx-auto mb-4 text-indigo-600" size={40} />
+          <p className="text-gray-700 font-medium">Memvalidasi lisensi...</p>
+          <p className="text-gray-500 text-sm mt-2">Mohon tunggu sebentar</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Tampilkan ActivationScreen jika belum teraktivasi
+  if (!isActivated) {
+    return <ActivationScreen onActivationSuccess={handleActivationSuccess} />;
+  }
+
+  // Tampilkan aplikasi utama jika sudah teraktivasi
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -3649,10 +3737,26 @@ const AttendanceRecapSystem = () => {
                 </p>
               </div>
             </div>
-            <div className="text-center md:text-right text-sm text-gray-500">
-              <p>Powered by:</p>
-              <p>Matsanuba Management Technology</p>
-              <p>Version 1.0 Netlify | © 2025</p>
+            <div className="flex flex-col items-center md:items-end gap-3">
+              <div className="text-center md:text-right text-sm text-gray-500">
+                <p>Powered by:</p>
+                <p>Matsanuba Management Technology</p>
+                <p>Version 1.0 Netlify | © 2025</p>
+              </div>
+              {licenseInfo && (
+                <div className="text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+                  <p className="font-semibold">📜 {licenseInfo.schoolName}</p>
+                  <p>Berlaku sampai: {new Date(licenseInfo.expiresAt).toLocaleDateString('id-ID')}</p>
+                  <p className="text-indigo-700">Sisa: {licenseInfo.daysRemaining} hari</p>
+                </div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                title="Logout dan masuk ke akun lain"
+              >
+                🚪 Logout
+              </button>
             </div>
           </div>
           <p className="text-gray-600 mb-8 border-t pt-4">
