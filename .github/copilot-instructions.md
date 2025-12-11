@@ -112,7 +112,43 @@ const normalizeId = (raw) => {
 - Digunakan dalam kalkulasi untuk mengurangi hari kerja yang diharapkan
 - Dikelola melalui form UI (tambah/hapus input tanggal)
 
-## Update Terbaru (Commit a7b2bac)
+## Update Terbaru (Latest - Commit 1fdd59f)
+
+### ✅ Bug Fixes: Token Persistence Issue
+**Masalah:** Page reload → kembali ke ActivationScreen (token tidak persisten)
+**Status:** FIXED & TESTED
+
+**Perubahan:**
+1. **Extract licenseKey dari JWT** - Ambil licenseKey dari JWT payload (tokenParts[1]) sebelum simpan
+2. **Validasi licenseKey saat startup** - Check field ada & valid di validateLicenseOnStartup()
+3. **Validasi expiration date** - Cegah lisensi kadaluarsa digunakan
+4. **Improve error handling** - Jangan langsung hapus token, catat error message aja
+5. **Token struct baru** - Include licenseKey, activatedAt fields
+
+**Files yang diubah:**
+- `src/ActivationScreen.js` - Lines 77-110 (extract & save licenseKey)
+- `src/App.js` - Lines 43-103, 87-95 (validate startup & handle success)
+
+**Alur baru:**
+```
+1. ActivationScreen receive token from verify-otp API
+2. Extract licenseKey dari JWT payload
+3. Save ke localStorage dengan full data
+4. Saat startup: validateLicenseOnStartup() decode dan validate
+5. Check: licenseKey ada & expires_at belum passed
+6. Jika OK → setIsActivated(true) → unlock app
+7. Jika error → catat error (jangan hapus token)
+```
+
+### 📋 Dokumentasi Baru
+- **CUSTOMER_LICENSING_WORKFLOW.md** - Panduan penjualan lisensi end-to-end
+  - Cara generate license key
+  - Insert ke Supabase
+  - Email template siap pakai
+  - Tracking & monitoring
+  - Perpanjang lisensi
+  
+## Alur Penjualan Lisensi (Customer Workflow)
 
 ### Perubahan UI
 1. **Layout Deskripsi Mobile-Friendly**: Mengubah layout kesimpulan dari 3-kolom grid (label : content) menjadi vertikal yang responsif

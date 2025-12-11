@@ -15,28 +15,39 @@ Untuk memudahkan navigasi, berikut adalah daftar lengkap dokumentasi dan file-fi
 
 ### 2. **IMPLEMENTATION_SUMMARY.md** 
    - Ringkasan lengkap apa yang sudah dibuat
+   - **BARU:** Detail bug fixes (token persistence issue)
    - Architecture overview
    - Files struktur
    - Features & capabilities
    - **Waktu:** 5 menit bacaan
    - **Untuk:** Memahami keseluruhan
 
+### 3. **CUSTOMER_LICENSING_WORKFLOW.md** ⭐ UNTUK PENJUALAN!
+   - Panduan lengkap untuk menjual lisensi ke customer
+   - Cara membuat license key & insert ke Supabase
+   - Email template siap pakai
+   - Tracking & monitoring lisensi
+   - Troubleshooting customer
+   - **Waktu:** 20 menit baca (reference setelah itu)
+   - **Untuk:** Admin yang jual lisensi
+
 ---
 
 ## 📖 DOKUMENTASI DETAIL
 
-### 3. **LICENSING_SETUP.md** (Panduan Komprehensif)
+### 4. **LICENSING_SETUP.md** (Panduan Komprehensif)
    - Prerequisites & checklist
    - Supabase setup (5 steps)
    - Netlify environment variables
    - Resend email service setup
    - Testing aktivasi flow
-   - Troubleshooting guide (7 common issues)
+   - **BARU:** Token Persistence & Reload section
+   - Troubleshooting guide (7+ common issues)
    - Production checklist
    - **Waktu:** 60 menit (detail)
    - **Untuk:** Deep dive setup
 
-### 4. **SETUP_SUPABASE.sql** (Database Schema)
+### 5. **SETUP_SUPABASE.sql** (Database Schema)
    - SQL untuk membuat 3 tabel:
      - `licenses` - informasi lisensi
      - `otp_codes` - kode OTP
@@ -46,7 +57,7 @@ Untuk memudahkan navigasi, berikut adalah daftar lengkap dokumentasi dan file-fi
    - Optional RLS security policies
    - **Untuk:** Database initialization
 
-### 5. **IMPLEMENTATION_CHECKLIST.md** (Detail Checklist)
+### 6. **IMPLEMENTATION_CHECKLIST.md** (Detail Checklist)
    - Checklist lengkap 9 items
    - Rincian setiap file yang dibuat
    - Architecture diagram
@@ -58,7 +69,7 @@ Untuk memudahkan navigasi, berikut adalah daftar lengkap dokumentasi dan file-fi
 
 ## ⚙️ FILE KONFIGURASI
 
-### 6. **.env.local.example**
+### 7. **.env.local.example**
    - Template environment variables untuk development
    - Copy ke `.env.local` dan isi values
    - 3 variables diperlukan:

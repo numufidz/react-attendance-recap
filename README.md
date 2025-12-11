@@ -1,19 +1,38 @@
 # Sistem Rekap Absensi - MTs. An-Nur Bululawang
 
-## ⚠️ Sistem Lisensi
-Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP untuk keamanan dan kontrol akses multi-tenant.
+## 🔐 Sistem Lisensi & Aktivasi
+Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP yang aman untuk kontrol akses multi-tenant dan tracking penggunaan per sekolah.
 
-### Aktivasi Lisensi
+### ✅ Fitur Keamanan
+- **OTP Verification** - Kode OTP 6-digit yang dikirim via email (Resend API)
+- **JWT Token** - Validasi token setiap startup dengan check ekspirasi
+- **License Persistence** - Token persisten di localStorage dengan enkripsi base64
+- **Rate Limiting** - Max 5 percobaan aktivasi per license key
+- **Audit Trail** - Logging semua activation attempts
+
+### 📱 Alur Aktivasi Lisensi
 1. **Buka aplikasi** → Akan muncul layar aktivasi
-2. **Masukkan License Key** → Format: XXXX-XXXX-XXXX-XXXX
-3. **Isi data sekolah** → Nama sekolah dan email
-4. **Terima OTP** → Kode akan dikirim ke email atau ditampilkan di console
-5. **Verifikasi OTP** → Masukkan 6-digit kode untuk unlock aplikasi
+2. **Masukkan License Key** → Format: XXXX-XXXX-XXXX-XXXX (contoh: `PROD-2025-0001-A1B2`)
+3. **Isi data sekolah** → Nama sekolah dan email terdaftar
+4. **Request OTP** → Klik "Kirim Kode OTP"
+5. **Terima OTP** → Kode 6-digit dikirim ke email dalam 5 menit
+6. **Verifikasi OTP** → Input kode OTP dan klik "Aktivasi"
+7. **Aplikasi Unlock** → Token disimpan, bisa langsung gunakan aplikasi
+8. **Reload aman** → Halaman di-reload tidak kembali ke aktivasi (token valid)
 
-### Lihat Dokumentasi Lengkap
-- **Setup & Konfigurasi**: Baca `LICENSING_SETUP.md`
-- **SQL Database**: Lihat `SETUP_SUPABASE.sql`
-- **Environment Variables**: Lihat `.env.local.example`
+### 📖 Lihat Dokumentasi
+- **Setup Awal** (30 menit): `QUICK_START.md`
+- **Setup Lengkap** (60 menit): `LICENSING_SETUP.md`
+- **Database Schema**: `SETUP_SUPABASE.sql`
+- **Workflow Penjualan**: `CUSTOMER_LICENSING_WORKFLOW.md` (NEW!)
+- **Environment Variables**: `.env.local.example`
+
+### 🔧 Untuk Admin/Penjualan Lisensi
+Lihat dokumentasi lengkap di `CUSTOMER_LICENSING_WORKFLOW.md` untuk:
+- Cara membuat license key baru
+- Insert ke Supabase
+- Kirim ke customer
+- Workflow penjualan end-to-end
 
 ## Deskripsi
 

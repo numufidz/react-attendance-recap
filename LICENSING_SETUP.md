@@ -6,7 +6,8 @@
 3. [Netlify Environment Variables](#netlify-environment-variables)
 4. [Resend Email Service](#resend-email-service)
 5. [Testing Aktivasi](#testing-aktivasi)
-6. [Troubleshooting](#troubleshooting)
+6. [Token Persistence & Reload](#token-persistence--reload)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -120,13 +121,75 @@ Untuk testing tanpa Resend:
 ### Step 3: Verifikasi Token Tersimpan
 1. Buka Developer Tools (F12)
 2. Buka tab "Application" → "Local Storage"
-3. Cari key "matsanuba_license_token"
-4. Token harus berupa base64-encoded JSON
+3. Cari key "licenseToken"
+4. Token harus berupa base64-encoded JSON dengan field:
+   ```json
+   {
+     "token": "eyJhbGc...",           // JWT token dari server
+     "licenseKey": "PROD-2025-0001-A1B2",  // Extracted dari JWT
+     "schoolName": "Nama Sekolah",
+     "expiresAt": "2026-02-28",
+     "activatedAt": "2025-12-11T..."
+   }
+   ```
 
-### Step 4: Test Logout
+### Step 4: Test Page Reload
+1. **Penting:** Test ini untuk verifikasi token persistence sudah fixed
+2. Buka aplikasi → aktivasi normal
+3. Halaman sudah unlock (main interface)
+4. **Reload halaman** (F5 atau Ctrl+R)
+5. Verifikasi: ✅ Tetap di aplikasi utama (BUKAN kembali ke ActivationScreen)
+6. Ini membuktikan token sudah persisten dengan benar
+
+### Step 5: Test Logout
 1. Klik tombol "🚪 Logout" di header
 2. Token akan dihapus dari localStorage
 3. Halaman akan kembali ke ActivationScreen
+
+---
+
+## Token Persistence & Reload
+
+### ✅ Masalah Sudah Diperbaiki (Commit: 1fdd59f)
+**Sebelumnya:** Page reload → kembali ke ActivationScreen (token tidak persisten)
+**Sekarang:** Page reload → tetap di aplikasi utama (token valid)
+
+### 📝 Apa Yang Diperbaiki
+1. **Extract licenseKey dari JWT** sebelum menyimpan
+2. **Validasi licenseKey saat startup** sebelum accept
+3. **Validasi expiration date** untuk mencegah lisensi kadaluarsa dipakai
+4. **Improve error handling** - tidak langsung hapus token, hanya catat error
+
+### 🔍 Detail Teknis
+- **File yang diubah:** `ActivationScreen.js` & `App.js`
+- **Alur baru:**
+  1. ActivationScreen extract `licenseKey` dari JWT payload
+  2. Simpan ke localStorage bersama token & school info
+  3. Saat startup: `validateLicenseOnStartup()` membaca localStorage
+  4. Cek `licenseKey` ada & valid
+  5. Cek tanggal expired belum lewat
+  6. Jika OK → `setIsActivated(true)` → unlock aplikasi
+  7. Jika error → catat pesan (jangan hapus token) → user bisa retry
+
+### 📊 Comparison Struktur Data
+```
+SEBELUM FIX:
+{
+  "token": "eyJhbGc...",
+  "schoolName": "Nama Sekolah",
+  "expiresAt": "2026-02-28"
+  // ❌ MISSING: licenseKey
+}
+
+SESUDAH FIX:
+{
+  "token": "eyJhbGc...",
+  "licenseKey": "PROD-2025-0001-A1B2",    // ✅ ADDED
+  "schoolName": "Nama Sekolah",
+  "expiresAt": "2026-02-28",
+  "activatedAt": "2025-12-11T..."
+}
+```
 
 ---
 
@@ -140,6 +203,16 @@ Untuk testing tanpa Resend:
 - OTP hanya berlaku 10 menit
 - Request OTP baru jika sudah lebih dari 10 menit
 
+### Error: "License key tidak valid di stored data"
+- Ini error validasi saat startup
+- Biasanya berarti token di localStorage corrupt atau format lama (sebelum fix)
+- Solusi: Clear localStorage dan aktivasi ulang
+  ```javascript
+  // Di browser console
+  localStorage.removeItem('licenseToken');
+  location.reload();
+  ```
+
 ### Error: "License not found"
 - Pastikan license_key sudah dibuat di database Supabase
 - Double-check format license key (case-sensitive)
@@ -147,6 +220,16 @@ Untuk testing tanpa Resend:
 ### Error: "Activation attempts exceeded"
 - Sudah coba 5 kali gagal
 - Tunggu beberapa jam sebelum coba lagi (cooldown)
+
+### Masalah: Page Reload → Kembali ke ActivationScreen
+- Ini sudah diperbaiki di commit `1fdd59f`
+- Jika masih terjadi, berarti ada issue dengan token persistence
+- Langkah debugging:
+  1. Buka Developer Tools (F12)
+  2. Application → Local Storage → cek "licenseToken"
+  3. Decode base64: `atob('...isi licenseToken...')`
+  4. Pastikan ada field "licenseKey"
+  5. Jika tidak ada, update ke versi terbaru aplikasi
 
 ### Email OTP tidak masuk
 - Cek folder spam/junk

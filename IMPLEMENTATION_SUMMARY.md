@@ -1,8 +1,28 @@
 # 🎯 RINGKASAN IMPLEMENTASI LICENSING SYSTEM - FINAL
 
-## ✅ SELESAI: 100% Implementation Done
+## ✅ SELESAI: 100% Implementation Done + Bug Fixes
 
-Semua kode untuk licensing system sudah **selesai dibuat dan terintegrasi**. Berikut adalah summary:
+Semua kode untuk licensing system sudah **selesai dibuat, terintegrasi, dan diperbaiki**. Berikut adalah summary terbaru:
+
+---
+
+## 🐛 Bug Fixes (Latest - Commit 1fdd59f)
+
+### Token Persistence Issue - FIXED ✅
+**Masalah:** Page reload → kembali ke ActivationScreen (token tidak persisten)
+**Solusi:** Extract & validasi licenseKey saat penyimpanan dan startup
+**Status:** RESOLVED - Tested & working
+
+**Files yang diubah:**
+- `src/ActivationScreen.js` - Extract licenseKey dari JWT sebelum simpan
+- `src/App.js` - Improve validateLicenseOnStartup() & error handling
+
+**Perubahan:**
+- ✅ Extract `licenseKey` dari JWT payload (tokenParts[1])
+- ✅ Simpan licenseKey ke localStorage bersama data lainnya
+- ✅ Validasi licenseKey + expiration date saat startup
+- ✅ Improve error handling - jangan langsung hapus token
+- ✅ Add detailed error messages untuk debugging
 
 ---
 
