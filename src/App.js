@@ -2277,7 +2277,7 @@ const AttendanceRecapSystem = () => {
       doc.text('Sistem Rekap Absensi', 40, 25);
       doc.setFontSize(12);
       doc.setFont(undefined, 'normal');
-      doc.text('MTs. AN-NUR BULULAWANG', 40, 45);
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
 
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
@@ -2413,7 +2413,7 @@ const AttendanceRecapSystem = () => {
     doc.text('PANDUAN LENGKAP 3 TABEL REKAP', 40, 25);
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
-    doc.text('MTs. AN-NUR BULULAWANG', 40, 45);
+    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
 
     yPos = 80;
     doc.setTextColor(0, 0, 0);
@@ -3751,11 +3751,8 @@ const AttendanceRecapSystem = () => {
                   Sistem Rekap Absensi
                 </h1>
                 <h2 className="text-xl font-semibold text-gray-800">
-                  MTs. An-Nur Bululawang
+                  {licenseInfo?.schoolName || 'SEKOLAH'}
                 </h2>
-                <p className="text-sm text-gray-600">
-                  Jl. Diponegoro IV Bululawang
-                </p>
               </div>
             </div>
             <div className="flex flex-col items-center md:items-end gap-3">
