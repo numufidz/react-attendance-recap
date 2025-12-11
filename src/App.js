@@ -2725,7 +2725,7 @@ const AttendanceRecapSystem = () => {
 
     doc.setFontSize(14);
     doc.setFont(undefined, 'normal');
-    doc.text('MTs. AN-NUR BULULAWANG', marginLeft, 50);
+    doc.text(licenseInfo?.schoolName || 'SEKOLAH', marginLeft, 50);
 
     // Judul Tabel (di bawah header biru)
     doc.setTextColor(0, 0, 0);
@@ -2773,7 +2773,7 @@ const AttendanceRecapSystem = () => {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
-      doc.text('MTs. AN-NUR BULULAWANG', marginLeft, 25);
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', marginLeft, 25);
       doc.setFontSize(12);
       doc.setFont(undefined, 'normal');
       doc.text(`${tableTitle} (lanjutan)`, marginLeft, 45);
