@@ -1,10 +1,11 @@
-# Sistem Rekap Absensi - MTs. An-Nur Bululawang
+# Sistem Rekap Absensi - Multi-Tenant Attendance Management
 
 ## 🔐 Sistem Lisensi & Aktivasi
 Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP yang aman untuk kontrol akses multi-tenant dan tracking penggunaan per sekolah.
 
-### ✅ Fitur Keamanan
+### ✅ Fitur Keamanan & Multi-Tenant
 - **OTP Verification** - Kode OTP 6-digit yang dikirim via email (Resend API)
+- **Dynamic School Branding** - Nama sekolah pembeli lisensi tampil di semua dokumen PDF & email
 - **JWT Token** - Validasi token setiap startup dengan check ekspirasi
 - **License Persistence** - Token persisten di localStorage dengan enkripsi base64
 - **Rate Limiting** - Max 5 percobaan aktivasi per license key
@@ -24,7 +25,7 @@ Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP yang aman untuk kontr
 - **Setup Awal** (30 menit): `QUICK_START.md`
 - **Setup Lengkap** (60 menit): `LICENSING_SETUP.md`
 - **Database Schema**: `SETUP_SUPABASE.sql`
-- **Workflow Penjualan**: `CUSTOMER_LICENSING_WORKFLOW.md` (NEW!)
+- **Workflow Penjualan**: `CUSTOMER_LICENSING_WORKFLOW.md`
 - **Environment Variables**: `.env.local.example`
 
 ### 🔧 Untuk Admin/Penjualan Lisensi
@@ -194,11 +195,11 @@ npm run build
 
 ## Lisensi
 
-Proyek ini dikembangkan untuk MTs. An-Nur Bululawang.
+Proyek ini adalah sistem attendance recap berbasis multi-tenant yang dapat digunakan untuk sekolah dan institusi pendidikan lainnya setelah mengaktifkan lisensi.
 
 ## Support
 
-Untuk bantuan atau pertanyaan, hubungi tim Matsanuba Management Technology.
+Untuk bantuan atau pertanyaan, hubungi administrator/pemilik lisensi Anda atau tim Matsanuba Management Technology.
 
 ---
 

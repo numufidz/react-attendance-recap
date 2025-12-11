@@ -257,7 +257,7 @@ const AttendanceRecapSystem = () => {
     doc.setFont(undefined, 'bold');
     doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
     doc.setFontSize(14);
-    doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.text(`Periode: ${summaryData.periode}`, 40, 55);
@@ -509,7 +509,7 @@ const AttendanceRecapSystem = () => {
     doc.text('PERINGKAT KARYAWAN', 40, yPos);
     doc.setFontSize(14);
     doc.setFont(undefined, 'normal');
-    doc.text(`MTs. An-Nur Bululawang`, 40, yPos + 25);
+    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, yPos + 25);
     doc.setFontSize(10);
     doc.text(`Periode: ${summaryData.periode}`, 40, yPos + 40);
 
@@ -1503,7 +1503,7 @@ const AttendanceRecapSystem = () => {
     // Subjudul
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
-    doc.text('MTs. AN-NUR BULULAWANG', 40, centerY + 10);
+    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, centerY + 10);
 
     // Periode
     doc.setFontSize(12);
@@ -1768,7 +1768,7 @@ const AttendanceRecapSystem = () => {
       doc.setFont(undefined, 'bold');
       doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
       doc.setFontSize(14);
-      doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.text(`Periode: ${summaryData.periode}`, 40, 55);
@@ -2014,7 +2014,7 @@ const AttendanceRecapSystem = () => {
 
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('MTs. AN-NUR BULULAWANG', 40, 40);
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.text(`Periode: ${summaryData.periode}`, 40, 55);

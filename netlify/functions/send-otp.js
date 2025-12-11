@@ -114,7 +114,7 @@ exports.handler = async (event) => {
               <p>Jika Anda mengalami kesulitan, hubungi tim support kami.</p>
               
               <div class="footer">
-                © 2025 Sistem Rekap Absensi - MTs. An-Nur Bululawang
+                © 2025 Sistem Rekap Absensi - Powered by Matsanuba Management Technology
               </div>
             </div>
           </body>

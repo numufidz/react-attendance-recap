@@ -1,7 +1,9 @@
-# Instruksi Copilot - Sistem Rekap Absensi React
+# Instruksi Copilot - Sistem Rekap Absensi React (Multi-Tenant)
 
 ## Gambaran Proyek
-Sistem analisis absensi berbasis React untuk MTs. An-Nur Bululawang yang memproses data mesin fingerprint karyawan dan menghasilkan laporan absensi komprehensif. Aplikasi menangani parsing file Excel, transformasi data kompleks, dan export multi-format (PDF, Excel, JPG).
+Sistem analisis absensi berbasis React yang support multi-tenant untuk berbagai sekolah dan institusi pendidikan. Aplikasi memproses data mesin fingerprint dan menghasilkan laporan absensi komprehensif. Fitur branding dinamis memungkinkan setiap sekolah (pemilik lisensi) melihat nama mereka sendiri di semua dokumen PDF dan komunikasi email.
+
+Aplikasi menangani parsing file Excel, transformasi data kompleks, dan export multi-format (PDF, Excel, JPG) dengan branding yang dapat disesuaikan.
 
 ## Arsitektur
 
@@ -112,9 +114,21 @@ const normalizeId = (raw) => {
 - Digunakan dalam kalkulasi untuk mengurangi hari kerja yang diharapkan
 - Dikelola melalui form UI (tambah/hapus input tanggal)
 
-## Update Terbaru (Latest - Commit 1fdd59f)
+## Update Terbaru (Latest - Commit 5876fcc)
 
-### ✅ Bug Fixes: Token Persistence Issue
+### ✅ Multi-Tenant Branding Implementation
+**Fitur:** Dinamis school name di semua PDF exports & email
+**Status:** IMPLEMENTED
+
+**Perubahan:**
+1. **PDF Exports** - Ganti hardcoded 'MTs. AN-NUR BULULAWANG' dengan `licenseInfo.schoolName`
+   - 5 lokasi di src/App.js (Category eval, Ranking, Summary, etc)
+2. **Email Template** - Ganti footer di send-otp.js dengan "Powered by Matsanuba Management Technology"
+3. **ActivationScreen** - Footer berubah ke "Powered by Matsanuba Management Technology"
+4. **Dokumentasi** - Update README & QUICK_START dengan placeholder generic
+5. **Developer Attribution** - Tetap "Matsanuba Management Technology" di semua dokumen
+
+### Previous: ✅ Bug Fixes: Token Persistence Issue
 **Masalah:** Page reload → kembali ke ActivationScreen (token tidak persisten)
 **Status:** FIXED & TESTED
 

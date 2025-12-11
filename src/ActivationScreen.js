@@ -293,7 +293,7 @@ export default function ActivationScreen({ onActivationSuccess }) {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
             © 2025 Sistem Rekap Absensi<br />
-            MTs. An-Nur Bululawang
+            Powered by Matsanuba Management Technology
           </p>
         </div>
       </div>
