@@ -59,42 +59,60 @@ const AttendanceRecapSystem = () => {
       // Decode stored license
       const decodedLicense = JSON.parse(atob(storedLicense));
       
-      // Handle both JWT token format dan simple license data format
-      const tokenToValidate = decodedLicense.token || storedLicense;
+      // Get license key dari stored data
+      const licenseKey = decodedLicense.licenseKey;
       
-      // Validate license key (direct check for testing)
-      const licenseKey = decodedLicense.license_key || decodedLicense.licenseKey;
+      if (!licenseKey || licenseKey === 'UNKNOWN') {
+        throw new Error('License key tidak valid di stored data');
+      }
+
+      // Validasi expiration date
+      const expiresAt = decodedLicense.expiresAt;
+      if (!expiresAt) {
+        throw new Error('Tanggal ekspirasi tidak ditemukan');
+      }
       
-      if (!licenseKey) {
-        throw new Error('License key tidak ditemukan di stored data');
+      const expirationDate = new Date(expiresAt);
+      const today = new Date();
+      
+      if (today > expirationDate) {
+        throw new Error('Lisensi sudah kadaluarsa. Hubungi administrator.');
       }
 
       // Check status di Supabase directly (simple validation)
       // For production, should use backend validation endpoint
+      const daysRemaining = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
+      
       setIsActivated(true);
       setLicenseInfo({
-        schoolName: decodedLicense.school_name || decodedLicense.schoolName || 'Sekolah',
-        expiresAt: decodedLicense.expires_at || decodedLicense.expiresAt,
+        schoolName: decodedLicense.schoolName || 'Sekolah',
+        expiresAt: expiresAt,
         licenseKey: licenseKey,
-        daysRemaining: Math.ceil((new Date(decodedLicense.expires_at || decodedLicense.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+        daysRemaining: daysRemaining
       });
       
     } catch (error) {
-      console.error('License validation error:', error);
-      localStorage.removeItem('licenseToken');
+      console.error('License validation error:', error.message);
+      // PENTING: Jangan langsung hapus token - mungkin hanya validation error sementara
+      // Catat error untuk user lihat
       setLicenseError('Gagal validasi lisensi: ' + error.message);
+      // Reset activated state tapi jangan hapus token (user bisa retry)
+      setIsActivated(false);
     } finally {
       setIsValidatingLicense(false);
     }
   };
 
   const handleActivationSuccess = (activationData) => {
+    const daysRemaining = Math.ceil((new Date(activationData.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
     setLicenseInfo({
       schoolName: activationData.schoolName,
       expiresAt: activationData.expiresAt,
-      daysRemaining: Math.ceil((new Date(activationData.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+      licenseKey: activationData.licenseKey,
+      daysRemaining: daysRemaining
     });
     setIsActivated(true);
+    setLicenseError(''); // Clear any previous errors
   };
 
   const handleLogout = () => {

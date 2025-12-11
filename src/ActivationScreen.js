@@ -77,9 +77,24 @@ export default function ActivationScreen({ onActivationSuccess }) {
         throw new Error(data.error || 'Gagal verifikasi OTP');
       }
 
+      // Decode JWT untuk ekstrak licenseKey dari claim
+      const tokenParts = data.token.split('.');
+      let licenseKeyFromJWT = null;
+      
+      if (tokenParts.length === 3) {
+        try {
+          const decodedPayload = JSON.parse(atob(tokenParts[1]));
+          licenseKeyFromJWT = decodedPayload.licenseKey;
+        } catch (e) {
+          console.warn('Gagal decode JWT payload:', e);
+        }
+      }
+
       // Simpan token ke localStorage (encrypted dengan base64)
+      // Simpan licenseKey yang diektrak dari JWT payload
       localStorage.setItem('licenseToken', btoa(JSON.stringify({
         token: data.token,
+        licenseKey: licenseKeyFromJWT || 'UNKNOWN',
         schoolName: data.schoolName,
         expiresAt: data.expiresAt,
         activatedAt: new Date().toISOString()
@@ -91,6 +106,7 @@ export default function ActivationScreen({ onActivationSuccess }) {
       setTimeout(() => {
         onActivationSuccess({
           token: data.token,
+          licenseKey: licenseKeyFromJWT || 'UNKNOWN',
           schoolName: data.schoolName,
           expiresAt: data.expiresAt
         });
