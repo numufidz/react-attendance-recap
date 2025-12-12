@@ -22,14 +22,14 @@ Aplikasi ini dilengkapi dengan sistem lisensi berbasis OTP yang aman untuk kontr
 8. **Reload aman** → Halaman di-reload tidak kembali ke aktivasi (token valid)
 
 ### 📖 Lihat Dokumentasi
-- **Setup Awal** (30 menit): `QUICK_START.md`
-- **Setup Lengkap** (60 menit): `LICENSING_SETUP.md`
-- **Database Schema**: `SETUP_SUPABASE.sql`
-- **Workflow Penjualan**: `CUSTOMER_LICENSING_WORKFLOW.md`
-- **Environment Variables**: `.env.local.example`
+- **Setup Awal** (30 menit): [`docs/QUICK_START.md`](docs/QUICK_START.md)
+- **Setup Lengkap** (60 menit): [`docs/LICENSING_SETUP.md`](docs/LICENSING_SETUP.md)
+- **Database Schema**: [`SETUP_SUPABASE.sql`](SETUP_SUPABASE.sql)
+- **Workflow Penjualan**: [`docs/CUSTOMER_LICENSING_WORKFLOW.md`](docs/CUSTOMER_LICENSING_WORKFLOW.md)
+- **Environment Variables**: [`.env.local.example`](.env.local.example)
 
 ### 🔧 Untuk Admin/Penjualan Lisensi
-Lihat dokumentasi lengkap di `CUSTOMER_LICENSING_WORKFLOW.md` untuk:
+Lihat dokumentasi lengkap di [`docs/CUSTOMER_LICENSING_WORKFLOW.md`](docs/CUSTOMER_LICENSING_WORKFLOW.md) untuk:
 - Cara membuat license key baru
 - Insert ke Supabase
 - Kirim ke customer
