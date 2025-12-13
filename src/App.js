@@ -48,6 +48,23 @@ const AttendanceRecapSystem = () => {
     setIsValidatingLicense(true);
     setLicenseError('');
 
+    // 🔓 DEVELOPMENT MODE BYPASS - Auto-activate dengan mock license
+    // Comment out section ini saat production!
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ DEV MODE: Auto-activating dengan mock license...');
+      setLicenseInfo({
+        schoolName: 'Sekolah Testing',
+        licenseKey: 'DEV-2025',
+        expiresAt: '2026-12-31',
+        daysRemaining: 365,
+        activatedAt: new Date().toISOString()
+      });
+      setIsActivated(true);
+      setIsValidatingLicense(false);
+      return;
+    }
+
+    // PRODUCTION MODE: Validate stored license token
     try {
       const storedLicense = localStorage.getItem('licenseToken');
 
@@ -240,6 +257,31 @@ const AttendanceRecapSystem = () => {
       link.href = image;
       link.download = `evaluasi-kategori-${summaryData?.periode || 'rekap'}.jpg`;
       link.click();
+    }
+  };
+
+  // Helper function to add logo image to PDF
+  const addLogoToPdf = async (doc, xPos = 40, yPos = 15, width = 40) => {
+    try {
+      const imgData = await new Promise((resolve) => {
+        const img = new Image();
+        img.src = '/logo.png';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+      });
+      if (imgData) {
+        const height = (img.height / img.width) * width;
+        doc.addImage(imgData, 'PNG', xPos, yPos, width, height);
+      }
+    } catch (error) {
+      console.warn('Logo tidak bisa dimuat:', error);
     }
   };
 
@@ -3739,38 +3781,45 @@ const AttendanceRecapSystem = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-            <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-              <img
-                src="https://numufidz.github.io/overlay/logo_mtsannur.png" // Ganti dengan path logo sekolah Anda
-                alt="Logo MTs. An-Nur Bululawang"
-                className="w-16 h-16 object-contain"
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
+            {/* Kiri - Logo & Judul */}
+            <div className="md:col-span-1 flex items-center justify-center md:justify-start gap-4">
+              <img 
+                src="/logo.png" 
+                alt="Logo Matsanuba" 
+                className="h-14 w-auto object-contain"
               />
               <div>
-                <h1 className="text-3xl font-bold text-indigo-800">
+                <h1 className="text-2xl font-bold text-indigo-800">
                   Sistem Rekap Absensi
                 </h1>
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg font-semibold text-gray-800">
                   {licenseInfo?.schoolName || 'SEKOLAH'}
                 </h2>
               </div>
             </div>
-            <div className="flex flex-col items-center md:items-end gap-3">
-              <div className="text-center md:text-right text-sm text-gray-500">
-                <p>Powered by:</p>
-                <p>Matsanuba Management Technology</p>
-                <p>Version 1.0 Netlify | © 2025</p>
-              </div>
-              {licenseInfo && (
-                <div className="text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
-                  <p className="font-semibold">📜 {licenseInfo.schoolName}</p>
-                  <p>Berlaku sampai: {new Date(licenseInfo.expiresAt).toLocaleDateString('id-ID')}</p>
-                  <p className="text-indigo-700">Sisa: {licenseInfo.daysRemaining} hari</p>
+            
+            {/* Tengah - Info Sekolah */}
+            {licenseInfo && (
+              <div className="md:col-span-1 flex items-center justify-center">
+                <div className="text-xs text-indigo-600 bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-200 text-center w-full">
+                  <p className="font-semibold text-sm mb-1">📜 {licenseInfo.schoolName}</p>
+                  <p className="text-indigo-700 mb-1">Berlaku: {new Date(licenseInfo.expiresAt).toLocaleDateString('id-ID')}</p>
+                  <p className="text-indigo-600">Sisa: <span className="font-bold">{licenseInfo.daysRemaining} hari</span></p>
                 </div>
-              )}
+              </div>
+            )}
+            
+            {/* Kanan - Powered By & Logout */}
+            <div className="md:col-span-1 flex flex-col items-center justify-center gap-2">
+              <div className="text-center text-xs text-gray-500">
+                <p className="text-gray-600 font-medium">Powered by:</p>
+                <p className="font-semibold text-gray-700">Matsanuba Management Technology</p>
+                <p className="text-gray-400">Version 1.0 | © 2025</p>
+              </div>
               <button
                 onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
                 title="Logout dan masuk ke akun lain"
               >
                 🚪 Logout
@@ -3973,7 +4022,7 @@ const AttendanceRecapSystem = () => {
                   disabled={attendanceData.length === 0}
                   className="flex-1 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-indigo-700 disabled:bg-gray-300 transition-colors"
                 >
-                  Tabel Rekap
+                  Rekap Laporan Lengkap
                 </button>
                 <button
                   onClick={downloadCompletePdf}
@@ -5340,7 +5389,7 @@ const AttendanceRecapSystem = () => {
               <li>Upload Laporan Absensi</li>
               <li>Upload Jadwal Kerja (opsional)</li>
               <li>Pilih tanggal awal dan akhir</li>
-              <li>Klik Generate Tabel Rekap</li>
+              <li>Klik Generate Rekap Laporan Lengkap</li>
               <li>Klik Generate Kesimpulan Profil</li>
               <li>
                 Klik Copy atau Download Excel atau Download PDF pada tabel yang

@@ -1,0 +1,48 @@
+{
+  "name": "Sistem Rekap Absensi",
+  "short_name": "Rekap Absensi",
+  "description": "Sistem profesional untuk evaluasi absensi karyawan berdasarkan data mesin fingerprint dan jadwal kerja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1e40af",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1200x1200",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1200x1200",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "1200x1200",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "Upload Absensi",
+      "short_name": "Upload",
+      "description": "Upload laporan absensi dari mesin fingerprint",
+      "url": "/?shortcut=upload",
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "1200x1200"
+        }
+      ]
+    }
+  ]
+}
