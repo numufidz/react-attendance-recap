@@ -1,7 +1,7 @@
 {
   "name": "Sistem Rekap Absensi",
   "short_name": "Rekap Absensi",
-  "description": "Sistem profesional untuk evaluasi absensi karyawan berdasarkan data mesin fingerprint dan jadwal kerja",
+  "description": "Sistem profesional untuk evaluasi absensi karyawan berbasis data mesin fingerprint dan jadwal kerja. Pendamping khusus mesin absensi Fingerspot dengan analisis kedisiplinan, rekap data mentah, dan peringkat performa karyawan.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

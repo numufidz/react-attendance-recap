@@ -37,7 +37,7 @@ Lihat dokumentasi lengkap di [`docs/CUSTOMER_LICENSING_WORKFLOW.md`](docs/CUSTOM
 
 ## Deskripsi
 
-Sistem profesional untuk evaluasi absensi karyawan berdasarkan data mesin fingerprint dan jadwal kerja. Menyediakan analisis kedisiplinan, rekap mentah, dan peringkat performa secara akurat dan efisien.
+Sistem profesional untuk evaluasi absensi karyawan berbasis data mesin fingerprint dan jadwal kerja. Aplikasi ini berfungsi sebagai pendamping khusus mesin absensi **Fingerspot**, baik dari perangkat langsung maupun file hasil unduhan dari **fingerspot.io**. Menyediakan analisis kedisiplinan, rekap data mentah, serta peringkat performa karyawan secara akurat, efisien, dan konsisten.
 
 ## Fitur Utama
 

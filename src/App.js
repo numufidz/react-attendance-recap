@@ -3827,10 +3827,12 @@ const AttendanceRecapSystem = () => {
             </div>
           </div>
           <p className="text-gray-600 mb-8 border-t pt-4">
-            Sistem profesional untuk evaluasi absensi karyawan berdasarkan data
-            mesin fingerprint dan jadwal kerja. Menyediakan analisis
-            kedisiplinan, rekap mentah, dan peringkat performa secara akurat dan
-            efisien.
+            Sistem profesional untuk evaluasi absensi karyawan berbasis data mesin
+            fingerprint dan jadwal kerja. Aplikasi ini berfungsi sebagai pendamping
+            khusus mesin absensi <strong>Fingerspot</strong>, baik dari perangkat
+            langsung maupun file hasil unduhan dari <strong>fingerspot.io</strong>.
+            Menyediakan analisis kedisiplinan, rekap data mentah, serta peringkat
+            performa karyawan secara akurat, efisien, dan konsisten.
           </p>
           {errorMessage && <p className="text-red-600 mb-4">{errorMessage}</p>}
 
