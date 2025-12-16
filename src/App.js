@@ -32,6 +32,9 @@ const AttendanceRecapSystem = () => {
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [activeRecapTab, setActiveRecapTab] = useState('summary');
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isProgressFadingOut, setIsProgressFadingOut] = useState(false);
+  const [downloadCompleted, setDownloadCompleted] = useState(false);
   // State untuk Hari Libur Khusus
   const [holidays, setHolidays] = useState(() => {
     const saved = localStorage.getItem('holidays');
@@ -1516,43 +1519,60 @@ const AttendanceRecapSystem = () => {
   };
 
   const downloadCompletePdf = async () => {
-    if (!summaryData || !recapData) {
-      alert('Silakan generate Kesimpulan Profil terlebih dahulu');
-      return;
-    }
+    try {
+      if (!summaryData || !recapData) {
+        alert('Silakan generate Kesimpulan Profil terlebih dahulu');
+        return;
+      }
 
-    const doc = new jsPDF('l', 'pt', 'a4'); // LANDSCAPE
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+      // Helper function untuk delay render progress
+      const updateProgressWithDelay = (progress) => {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            setDownloadProgress(progress);
+            resolve();
+          }, 300); // 300ms delay antara setiap update
+        });
+      };
 
-    // ============= HALAMAN 1: KESIMPULAN =============
-    let yPos = 50;
+      await updateProgressWithDelay(20); // Progress 20%
 
-    // Header
-    const headerHeight = 80;
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, pageWidth, headerHeight, 'F');
-    doc.setTextColor(255, 255, 255);
+      const doc = new jsPDF('l', 'pt', 'a4'); // LANDSCAPE
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Hitung posisi tengah vertikal
-    const centerY = headerHeight / 2;
+      // ============= HALAMAN 1: KESIMPULAN =============
+      let yPos = 50;
 
-    // Judul utama
-    doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
-    doc.text('KESIMPULAN PROFIL ABSENSI', 40, centerY - 8);
+      // Header
+      const headerHeight = 80;
+      doc.setFillColor(79, 70, 229);
+      doc.rect(0, 0, pageWidth, headerHeight, 'F');
+      doc.setTextColor(255, 255, 255);
 
-    // Subjudul
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, centerY + 10);
+      // Hitung posisi tengah vertikal
+      const centerY = headerHeight / 2;
 
-    // Periode
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Periode: ${summaryData.periode}`, 40, centerY + 26);
+      // Judul utama
+      doc.setFontSize(24);
+      doc.setFont(undefined, 'bold');
+      doc.text('KESIMPULAN PROFIL ABSENSI', 40, centerY - 8);
 
-    // yPos setelah header
+      // Subjudul
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, centerY + 10);
+
+      // Periode
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Periode: ${summaryData.periode}`, 40, centerY + 26);
+
+      // yPos setelah header
+      yPos = headerHeight + 20;
+      doc.setTextColor(0, 0, 0);
+
+      await updateProgressWithDelay(30); // Progress 30%
     yPos = headerHeight + 20;
     doc.setTextColor(0, 0, 0);
 
@@ -1603,6 +1623,8 @@ const AttendanceRecapSystem = () => {
     });
 
     yPos += summaryBoxHeight + 30;
+
+    await updateProgressWithDelay(40); // Progress 40%
 
     // Rincian Kehadiran Header
     doc.setFontSize(14);
@@ -1797,6 +1819,8 @@ const AttendanceRecapSystem = () => {
     textY += 12;
     doc.setFont(undefined, 'normal');
     doc.text(rekomendasiLines, 60, textY);
+
+    await updateProgressWithDelay(50); // Progress 50%
 
     // ============= HALAMAN 2: EVALUASI KATEGORI =============
     if (categoryEvaluation) {
@@ -2040,6 +2064,9 @@ const AttendanceRecapSystem = () => {
       const tindakan3 = doc.splitTextToSize('• Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu', colWidth);
       doc.text(tindakan3, rightColX + 5, recRightY);
     }
+
+    await updateProgressWithDelay(60); // Progress 60%
+    await updateProgressWithDelay(70); // Progress 70%
 
     // ============= HALAMAN 3: RANKING (3 KOLOM) =============
     if (rankingData) {
@@ -2693,8 +2720,18 @@ const AttendanceRecapSystem = () => {
       );
     }
 
+    await updateProgressWithDelay(90); // Progress 90%
+
     const timestamp = new Date().toISOString().split('T')[0];
     doc.save(`laporan_lengkap_absensi_${timestamp}.pdf`);
+    
+    await updateProgressWithDelay(100); // Download selesai
+    setDownloadCompleted(true); // Set status completed - tetap tampil sampai refresh
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setDownloadProgress(0); // Reset langsung saat error
+      alert('Gagal menghasilkan PDF: ' + error.message);
+    }
   };
 
   const downloadAsPdf = async (tableId, fileName, includeSummary = false) => {
@@ -4021,20 +4058,37 @@ const AttendanceRecapSystem = () => {
               <div className="flex flex-col md:flex-row gap-4">
                 <button
                   onClick={generateRecapTables}
-                  disabled={attendanceData.length === 0}
+                  disabled={attendanceData.length === 0 || downloadProgress > 0}
                   className="flex-1 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-indigo-700 disabled:bg-gray-300 transition-colors"
                 >
-                  Rekap Laporan Lengkap
+                  <span className="md:hidden">Rekap Laporan</span><span className="hidden md:inline">Rekap Laporan Lengkap</span>
                 </button>
                 <button
                   onClick={downloadCompletePdf}
-                  disabled={!recapData}
+                  disabled={!recapData || downloadProgress > 0}
                   className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-green-700 disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2"
                 >
                   <Download size={20} />
                   <span className="md:hidden">PDF Laporan</span><span className="hidden md:inline">Download PDF Laporan Lengkap</span>
                 </button>
               </div>
+              {/* Progress Bar */}
+              {downloadProgress > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {downloadCompleted ? '✓ Download Completed' : `Menghasilkan PDF... ${downloadProgress}%`}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700">{downloadProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full bg-[#059669] transition-all duration-400`}
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           {recapData && (
