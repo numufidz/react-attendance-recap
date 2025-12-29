@@ -78,10 +78,10 @@ const AttendanceRecapSystem = () => {
 
       // Decode stored license
       const decodedLicense = JSON.parse(atob(storedLicense));
-      
+
       // Get license key dari stored data
       const licenseKey = decodedLicense.licenseKey;
-      
+
       if (!licenseKey || licenseKey === 'UNKNOWN') {
         throw new Error('License key tidak valid di stored data');
       }
@@ -91,10 +91,10 @@ const AttendanceRecapSystem = () => {
       if (!expiresAt) {
         throw new Error('Tanggal ekspirasi tidak ditemukan');
       }
-      
+
       const expirationDate = new Date(expiresAt);
       const today = new Date();
-      
+
       if (today > expirationDate) {
         throw new Error('Lisensi sudah kadaluarsa. Hubungi administrator.');
       }
@@ -102,7 +102,7 @@ const AttendanceRecapSystem = () => {
       // Check status di Supabase directly (simple validation)
       // For production, should use backend validation endpoint
       const daysRemaining = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
-      
+
       setIsActivated(true);
       setLicenseInfo({
         schoolName: decodedLicense.schoolName || 'Sekolah',
@@ -110,7 +110,7 @@ const AttendanceRecapSystem = () => {
         licenseKey: licenseKey,
         daysRemaining: daysRemaining
       });
-      
+
     } catch (error) {
       console.error('License validation error:', error.message);
       // PENTING: Jangan langsung hapus token - mungkin hanya validation error sementara
@@ -536,6 +536,53 @@ const AttendanceRecapSystem = () => {
     const updatedHolidays = holidays.filter((date) => date !== dateToRemove);
     setHolidays(updatedHolidays);
     localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
+  };
+
+  const clearAllHolidays = () => {
+    if (holidays.length === 0) return;
+    if (window.confirm('Apakah Anda yakin ingin menghapus SEMUA daftar hari libur?')) {
+      setHolidays([]);
+      localStorage.setItem('holidays', JSON.stringify([]));
+    }
+  };
+
+  // State untuk Input Mode Libur
+  const [holidayInputMode, setHolidayInputMode] = useState('single'); // 'single' | 'range'
+  const [holidayStartDate, setHolidayStartDate] = useState('');
+  const [holidayEndDate, setHolidayEndDate] = useState('');
+
+  const addHolidayRange = () => {
+    if (!holidayStartDate || !holidayEndDate) return;
+
+    const start = new Date(holidayStartDate);
+    const end = new Date(holidayEndDate);
+
+    if (start > end) {
+      alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai!');
+      return;
+    }
+
+    const newDates = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      if (!holidays.includes(dateStr)) {
+        newDates.push(dateStr);
+      }
+    }
+
+    if (newDates.length === 0) {
+      alert('Semua tanggal dalam rentang ini sudah ada di daftar libur!');
+      return;
+    }
+
+    const updatedHolidays = [...holidays, ...newDates].sort();
+    setHolidays(updatedHolidays);
+    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
+
+    // Reset inputs
+    setHolidayStartDate('');
+    setHolidayEndDate('');
+    alert(`Berhasil menambahkan ${newDates.length} hari libur!`);
   };
 
   const downloadRankingAsPdf = async () => {
@@ -1073,11 +1120,22 @@ const AttendanceRecapSystem = () => {
       setRecapData(newRecapData);
 
       // Automatically generate summary and ranking
-      let totalHariKerja = 0;
+      let totalHariKerja = 0; // Total akumulasi hari kerja semua karyawan
       let totalHadir = 0;
       let totalTepat = 0;
       let totalTelat = 0;
       let totalAlfa = 0;
+
+      // Hitung Hari Kerja Efektif (Hari dimana sekolah masuk / ada aktifitas)
+      // Logika: Hari kerja adalah hari dimana TIDAK SEMUA karyawan libur (L)
+      let effectiveHariKerja = 0;
+      dateRange.forEach(dateStr => {
+        // Cek jika ada setidaknya satu karyawan yang statsnya BUKAN 'L' pada tanggal ini
+        const isWorkingDay = recap.some(emp => emp.dailyEvaluation[dateStr].text !== 'L');
+        if (isWorkingDay) {
+          effectiveHariKerja++;
+        }
+      });
 
       recap.forEach((emp) => {
         dateRange.forEach((dateStr) => {
@@ -1146,7 +1204,8 @@ const AttendanceRecapSystem = () => {
         icon,
         persentaseKehadiran,
         totalKaryawan: recap.length,
-        totalHariKerja,
+        totalHariKerja, // Total akumulasi (Column 4)
+        effectiveHariKerja, // Hari Kerja Sekolah (Column 3)
         totalHadir,
         persentaseTepat,
         totalTepat,
@@ -1313,6 +1372,15 @@ const AttendanceRecapSystem = () => {
     let totalTelat = 0;
     let totalAlfa = 0;
 
+    // Hitung effectiveHariKerja untuk generateSummary
+    let effectiveHariKerja = 0;
+    recapData.dateRange.forEach(dateStr => {
+      const isWorkingDay = recapData.recap.some(emp => emp.dailyEvaluation[dateStr].text !== 'L');
+      if (isWorkingDay) {
+        effectiveHariKerja++;
+      }
+    });
+
     recapData.recap.forEach((emp) => {
       recapData.dateRange.forEach((dateStr) => {
         const ev = emp.dailyEvaluation[dateStr];
@@ -1388,6 +1456,7 @@ const AttendanceRecapSystem = () => {
       totalTelat,
       persentaseAlfa,
       totalAlfa,
+      effectiveHariKerja, // Pastikan ini juga diupdate saat generateSummary dipanggil manual
       periode,
     });
 
@@ -1573,891 +1642,840 @@ const AttendanceRecapSystem = () => {
       doc.setTextColor(0, 0, 0);
 
       await updateProgressWithDelay(30); // Progress 30%
-    yPos = headerHeight + 20;
-    doc.setTextColor(0, 0, 0);
-
-    // 4 KOTAK INFORMASI UTAMA (1 BARIS)
-    const summaryBoxes = [
-      {
-        label: 'Predikat',
-        value: summaryData.predikat,
-        color: [240, 240, 255],
-        fontSize: 16, // Lebih kecil dari sebelumnya (20)
-      },
-      {
-        label: 'Total Guru & Karyawan',
-        value: `${summaryData.totalKaryawan} orang`,
-        color: [230, 230, 240],
-        fontSize: 18,
-      },
-      {
-        label: 'Total Hari Kerja',
-        value: `${summaryData.totalHariKerja} hari`,
-        color: [230, 230, 240],
-        fontSize: 18,
-      },
-      {
-        label: 'Tingkat Kehadiran',
-        value: `${summaryData.persentaseKehadiran}%`,
-        color: [220, 220, 240],
-        fontSize: 18,
-      },
-    ];
-
-    const summarySpacing = 15;
-    const summaryBoxWidth = (pageWidth - 80 - (3 * summarySpacing)) / 4;
-    const summaryBoxHeight = 70;
-
-    summaryBoxes.forEach((box, idx) => {
-      const xPos = 40 + idx * (summaryBoxWidth + summarySpacing);
-      doc.setFillColor(...box.color);
-      doc.roundedRect(xPos, yPos, summaryBoxWidth, summaryBoxHeight, 5, 5, 'F');
-
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'normal');
-      doc.text(box.label, xPos + 15, yPos + 25);
-
-      doc.setFontSize(box.fontSize);
-      doc.setFont(undefined, 'bold');
-      doc.text(box.value, xPos + 15, yPos + 50);
-    });
-
-    yPos += summaryBoxHeight + 30;
-
-    await updateProgressWithDelay(40); // Progress 40%
-
-    // Rincian Kehadiran Header
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setFillColor(220, 220, 240);
-    doc.roundedRect(40, yPos, pageWidth - 80, 30, 5, 5, 'F');
-    doc.text('Rincian Kehadiran:', 60, yPos + 20);
-
-    yPos += 40;
-
-    const details = [
-      {
-        label: 'Hadir Total',
-        value: `${summaryData.totalHadir} (${summaryData.persentaseKehadiran}%)`,
-        color: [200, 230, 255],
-      },
-      {
-        label: 'Tepat Waktu',
-        value: `${summaryData.totalTepat} (${summaryData.persentaseTepat}%)`,
-        color: [200, 255, 200],
-      },
-      {
-        label: 'Terlambat',
-        value: `${summaryData.totalTelat} (${summaryData.persentaseTelat}%)`,
-        color: [255, 255, 200],
-      },
-      {
-        label: 'Alfa',
-        value: `${summaryData.totalAlfa} (${summaryData.persentaseAlfa}%)`,
-        color: [255, 200, 200],
-      },
-    ];
-
-    // 4 box dalam 1 baris, lebar sama dan simetris (Full Justified)
-    const detailSpacing = 15; // Spacing antar box
-    const detailBoxWidth = (pageWidth - 80 - (3 * detailSpacing)) / 4;
-    const detailBoxHeight = 60;
-
-    details.forEach((detail, idx) => {
-      const xPos = 40 + idx * (detailBoxWidth + detailSpacing);
-      doc.setFillColor(...detail.color);
-      doc.roundedRect(xPos, yPos, detailBoxWidth, detailBoxHeight, 5, 5, 'F');
-
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'normal');
-      doc.text(detail.label, xPos + 15, yPos + 25);
-
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text(detail.value, xPos + 15, yPos + 45);
-    });
-
-    yPos += detailBoxHeight + 30;
-
-    // ============= DESKRIPSI KESIMPULAN (DYNAMIC HEIGHT) =============
-
-    // 1. Hitung dulu semua teks untuk menentukan tinggi kotak
-    const contentWidth = pageWidth - 120; // Lebar area teks (margin kiri 60, kanan 60)
-
-    // Paragraf Pembuka
-    const introText = `Profil absensi periode ${summaryData.periode} menunjukkan tingkat kehadiran ${summaryData.persentaseKehadiran}% yang termasuk kategori ${summaryData.predikat}.`;
-    const introLines = doc.splitTextToSize(introText, contentWidth);
-
-    // Analisis Kehadiran
-    let analisisText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      analisisText = 'Tingkat kehadiran sangat luar biasa dengan konsistensi kehadiran hampir sempurna.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      analisisText = 'Tingkat kehadiran sangat memuaskan dengan komitmen tinggi dari guru & karyawan.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      analisisText = 'Tingkat kehadiran baik dan menunjukkan dedikasi yang konsisten.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      analisisText = 'Tingkat kehadiran cukup baik namun masih ada ruang perbaikan.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      analisisText = 'Tingkat kehadiran di bawah standar dengan cukup banyak ketidakhadiran.';
-    } else {
-      analisisText = 'Tingkat kehadiran di bawah standar minimal dengan banyak ketidakhadiran tanpa keterangan jelas.';
-    }
-    const analisisLines = doc.splitTextToSize(analisisText, contentWidth);
-
-    // Kesadaran Absensi
-    let kesadaranText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      kesadaranText = 'Ketertiban scan masuk-pulang sangat sempurna. Hampir semua guru & karyawan konsisten melakukan scan lengkap.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      kesadaranText = 'Ketertiban scan masuk-pulang sangat baik. Mayoritas konsisten melakukan scan lengkap setiap hari.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      kesadaranText = 'Ketertiban scan masuk-pulang baik. Sebagian besar melakukan scan dengan tertib.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      kesadaranText = 'Ketertiban perlu ditingkatkan. Masih ditemukan kasus lupa scan pulang atau tidak scan sama sekali.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      kesadaranText = 'Ketertiban scan masuk-pulang kurang. Cukup banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap.';
-    } else {
-      kesadaranText = 'Ketertiban scan masuk-pulang rendah. Banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap, menunjukkan kurangnya kesadaran administrasi.';
-    }
-    const kesadaranLines = doc.splitTextToSize(kesadaranText, contentWidth);
-
-    // Kedisiplinan Waktu
-    let kedisiplinanText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      kedisiplinanText = 'Ketepatan waktu sangat sempurna. Hampir semua datang sebelum jadwal yang ditentukan.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      kedisiplinanText = 'Ketepatan waktu sangat baik. Sebagian besar datang sebelum atau tepat jadwal yang ditentukan.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      kedisiplinanText = 'Ketepatan waktu baik. Mayoritas guru & karyawan datang tepat waktu sesuai jadwal.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      kedisiplinanText = 'Ketepatan waktu bervariasi. Sebagian disiplin namun masih ada yang sering terlambat.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      kedisiplinanText = 'Ketepatan waktu kurang. Cukup banyak guru & karyawan datang terlambat dari jadwal.';
-    } else {
-      kedisiplinanText = 'Ketepatan waktu rendah. Banyak guru & karyawan datang terlambat setelah jadwal dimulai.';
-    }
-    const kedisiplinanLines = doc.splitTextToSize(kedisiplinanText, contentWidth);
-
-    // Rekomendasi/Apresiasi
-    const rekomendasiLabel = summaryData.persentaseKehadiran >= 91 ? 'Apresiasi:' : 'Rekomendasi:';
-    let rekomendasiText = '';
-    if (summaryData.persentaseKehadiran >= 96) {
-      rekomendasiText = 'Prestasi luar biasa! Pertahankan kedisiplinan sempurna ini dan jadilah teladan bagi yang lain.';
-    } else if (summaryData.persentaseKehadiran >= 91) {
-      rekomendasiText = 'Prestasi sangat baik! Pertahankan disiplin ini dan tingkatkan menuju level UNGGUL.';
-    } else if (summaryData.persentaseKehadiran >= 86) {
-      rekomendasiText = 'Performa baik, pertahankan dan tingkatkan konsistensi untuk mencapai kategori BAIK SEKALI.';
-    } else if (summaryData.persentaseKehadiran >= 81) {
-      rekomendasiText = 'Disarankan reminder rutin dan evaluasi berkala untuk mencapai kategori BAIK atau BAIK SEKALI.';
-    } else if (summaryData.persentaseKehadiran >= 76) {
-      rekomendasiText = 'Perlu pembinaan dan monitoring ketat untuk perbaikan kedisiplinan secara bertahap.';
-    } else {
-      rekomendasiText = 'Perlu evaluasi individual, pembinaan intensif, dan penerapan sanksi tegas untuk perbaikan kedisiplinan.';
-    }
-    const rekomendasiLines = doc.splitTextToSize(rekomendasiText, contentWidth);
-
-    // Hitung total tinggi yang dibutuhkan
-    // Header (20) + Intro (lines*12 + 10) + 4 section * (Title 12 + lines*12 + 8) + Padding Bottom (20)
-    let totalBoxHeight = 20 + (introLines.length * 12 + 10) + 20; // Base padding
-    totalBoxHeight += 12 + analisisLines.length * 12 + 8;
-    totalBoxHeight += 12 + kesadaranLines.length * 12 + 8;
-    totalBoxHeight += 12 + kedisiplinanLines.length * 12 + 8;
-    totalBoxHeight += 12 + rekomendasiLines.length * 12;
-
-    // Gambar Kotak Background
-    doc.setFillColor(245, 245, 250);
-    doc.setDrawColor(200, 200, 220);
-    doc.setLineWidth(1.5);
-    doc.roundedRect(40, yPos, pageWidth - 80, totalBoxHeight, 5, 5, 'FD');
-
-    // Render Teks
-    let textY = yPos + 25;
-
-    // Judul
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(79, 70, 229);
-    doc.text('Deskripsi Kesimpulan Profil Absensi', 60, textY);
-    textY += 20;
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-
-    // Intro
-    doc.text(introLines, 60, textY);
-    textY += introLines.length * 12 + 10;
-
-    // Analisis
-    doc.setFont(undefined, 'bold');
-    doc.text('Analisis Kehadiran:', 60, textY);
-    textY += 12;
-    doc.setFont(undefined, 'normal');
-    doc.text(analisisLines, 60, textY);
-    textY += analisisLines.length * 12 + 8;
-
-    // Kesadaran
-    doc.setFont(undefined, 'bold');
-    doc.text('Kesadaran Absensi:', 60, textY);
-    textY += 12;
-    doc.setFont(undefined, 'normal');
-    doc.text(kesadaranLines, 60, textY);
-    textY += kesadaranLines.length * 12 + 8;
-
-    // Kedisiplinan
-    doc.setFont(undefined, 'bold');
-    doc.text('Kedisiplinan Waktu:', 60, textY);
-    textY += 12;
-    doc.setFont(undefined, 'normal');
-    doc.text(kedisiplinanLines, 60, textY);
-    textY += kedisiplinanLines.length * 12 + 8;
-
-    // Rekomendasi
-    doc.setFont(undefined, 'bold');
-    doc.text(rekomendasiLabel, 60, textY);
-    textY += 12;
-    doc.setFont(undefined, 'normal');
-    doc.text(rekomendasiLines, 60, textY);
-
-    await updateProgressWithDelay(50); // Progress 50%
-
-    // ============= HALAMAN 2: EVALUASI KATEGORI =============
-    if (categoryEvaluation) {
-      doc.addPage();
-
-      // Header
-      doc.setFillColor(79, 70, 229); // Indigo - sama dengan header Peringkat
-      doc.rect(0, 0, pageWidth, 60, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
-      doc.setFontSize(14);
-      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Periode: ${summaryData.periode}`, 40, 55);
-
-      yPos = 80;
+      yPos = headerHeight + 20;
       doc.setTextColor(0, 0, 0);
 
-      // 1. KEHADIRAN
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('1. KEHADIRAN', 40, yPos);
-      yPos += 15;
-
-      const catWidth = (pageWidth - 100) / 3;
-      const catX = [40, 40 + catWidth + 10, 40 + 2 * (catWidth + 10)];
-      const categories = ['Pimpinan', 'Guru', 'Tendik'];
-
-      categories.forEach((cat, idx) => {
-        const data = categoryEvaluation[cat];
-
-        // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
-        if (cat === 'Pimpinan') {
-          doc.setFillColor(200, 230, 255); // Soft Blue
-        } else if (cat === 'Guru') {
-          doc.setFillColor(200, 255, 200); // Soft Green
-        } else {
-          doc.setFillColor(255, 255, 200); // Soft Yellow
-        }
-        doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
-
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(cat, catX[idx] + 10, yPos + 15);
-
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
-
-        // Persentase besar
-        doc.setFontSize(26);
-        doc.setFont(undefined, 'bold');
-        const persenText = `${data.persenKehadiran}%`;
-        const persenWidth = doc.getTextWidth(persenText);
-        doc.text(persenText, catX[idx] + 10, yPos + 52);
-
-        // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
-        const predikat = getPredicate(data.persenKehadiran);
-        const predikatText = predikat;
-
-        // Ukur lebar teks predikat
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        const predikatWidth = doc.getTextWidth(predikatText);
-        const badgeWidth = predikatWidth + 12;
-        const badgeHeight = 16;
-        const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
-        const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
-
-        // Gambar badge dengan border radius
-        doc.setFillColor(255, 255, 255); // Putih
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
-
-        // Teks predikat di dalam badge
-        doc.setTextColor(0, 0, 0);
-        doc.text(predikatText, badgeX + 6, badgeY + 11);
-
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 65);
-      });
-
-      yPos += 90;
-
-      // 2. KEDISIPLINAN WAKTU
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('2. KEDISIPLINAN WAKTU', 40, yPos);
-      yPos += 15;
-
-      categories.forEach((cat, idx) => {
-        const data = categoryEvaluation[cat];
-
-        // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
-        if (cat === 'Pimpinan') {
-          doc.setFillColor(200, 230, 255); // Soft Blue
-        } else if (cat === 'Guru') {
-          doc.setFillColor(200, 255, 200); // Soft Green
-        } else {
-          doc.setFillColor(255, 255, 200); // Soft Yellow
-        }
-        doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
-
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(cat, catX[idx] + 10, yPos + 15);
-
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
-
-        // Persentase besar
-        doc.setFontSize(26);
-        doc.setFont(undefined, 'bold');
-        const persenText = `${data.persenTepat}%`;
-        const persenWidth = doc.getTextWidth(persenText);
-        doc.text(persenText, catX[idx] + 10, yPos + 52);
-
-        // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
-        const predikat = getPredicate(data.persenTepat);
-        const predikatText = predikat;
-
-        // Ukur lebar teks predikat
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        const predikatWidth = doc.getTextWidth(predikatText);
-        const badgeWidth = predikatWidth + 12;
-        const badgeHeight = 16;
-        const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
-        const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
-
-        // Gambar badge dengan border radius
-        doc.setFillColor(255, 255, 255); // Putih
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
-
-        // Teks predikat di dalam badge
-        doc.setTextColor(0, 0, 0);
-        doc.text(predikatText, badgeX + 6, badgeY + 11);
-
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 65);
-      });
-
-      yPos += 90;
-
-      // REKOMENDASI - Static Content Matching Tab 2
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(79, 70, 229);
-      doc.setLineWidth(2);
-      doc.roundedRect(40, yPos, pageWidth - 80, 165, 5, 5, 'FD');
-
-      // Header Rekomendasi
-      doc.setFillColor(79, 70, 229);
-      doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
-      doc.setFontSize(13);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text('REKOMENDASI', 50, yPos + 17);
-
-      doc.setTextColor(0, 0, 0);
-
-      // LAYOUT 2 KOLOM
-      const leftColX = 50;
-      const rightColX = (pageWidth / 2) + 20;
-      const colWidth = (pageWidth / 2) - 60;
-
-      let recLeftY = yPos + 45;
-      let recRightY = yPos + 45;
-
-      // ===== KOLOM KIRI: REKOMENDASI PER KATEGORI =====
-
-      // Rekomendasi Pimpinan
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(59, 130, 246);
-      doc.text('1. Pimpinan:', leftColX, recLeftY);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      recLeftY += 12;
-      const pimpinanText = 'Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.';
-      const pimpinanLines = doc.splitTextToSize(pimpinanText, colWidth);
-      doc.text(pimpinanLines, leftColX + 5, recLeftY);
-      recLeftY += pimpinanLines.length * 11 + 10;
-
-      // Rekomendasi Guru
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(34, 197, 94);
-      doc.text('2. Guru:', leftColX, recLeftY);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      recLeftY += 12;
-      const guruText = 'Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.';
-      const guruLines = doc.splitTextToSize(guruText, colWidth);
-      doc.text(guruLines, leftColX + 5, recLeftY);
-      recLeftY += guruLines.length * 11 + 10;
-
-      // Rekomendasi Tendik
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(251, 191, 36);
-      doc.text('3. Tendik:', leftColX, recLeftY);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      recLeftY += 12;
-      const tendikText = 'Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.';
-      const tendikLines = doc.splitTextToSize(tendikText, colWidth);
-      doc.text(tendikLines, leftColX + 5, recLeftY);
-
-      // ===== KOLOM KANAN: TINDAKAN UMUM =====
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('Rekomendasi Umum:', rightColX, recRightY); // Match Title with Tab 2 "Rekomendasi Umum"
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      recRightY += 15;
-
-      const tindakan1 = doc.splitTextToSize('• Meningkatkan pemantauan waktu kedatangan dan kepulangan', colWidth);
-      doc.text(tindakan1, rightColX + 5, recRightY);
-      recRightY += tindakan1.length * 11 + 8;
-
-      const tindakan2 = doc.splitTextToSize('• Mengadakan pembinaan manajemen waktu', colWidth);
-      doc.text(tindakan2, rightColX + 5, recRightY);
-      recRightY += tindakan2.length * 11 + 8;
-
-      const tindakan3 = doc.splitTextToSize('• Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu', colWidth);
-      doc.text(tindakan3, rightColX + 5, recRightY);
-    }
-
-    await updateProgressWithDelay(60); // Progress 60%
-    await updateProgressWithDelay(70); // Progress 70%
-
-    // ============= HALAMAN 3: RANKING (3 KOLOM) =============
-    if (rankingData) {
-      doc.addPage();
-      yPos = 40;
-
-      // Header Peringkat
-      doc.setFillColor(79, 70, 229);
-      doc.rect(0, 0, pageWidth, 60, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text('PERINGKAT GURU & KARYAWAN', 40, 25);
-
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Periode: ${summaryData.periode}`, 40, 55);
-
-      yPos = 80;
-
-      // Lebar kolom untuk 3 tabel
-      const colWidth = (pageWidth - 100) / 3;
-      const startX = [40, 40 + colWidth + 10, 40 + 2 * (colWidth + 10)];
-
-      // Tabel 1: Disiplin Waktu
-      doc.setTextColor(255, 255, 255);
-      doc.setFillColor(34, 197, 94); // Green
-      doc.roundedRect(startX[0], yPos, colWidth, 25, 5, 5, 'F');
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Disiplin Waktu Tertinggi', startX[0] + 10, yPos + 17);
-
-      // Tabel 2: Tertib Administrasi
-      doc.setFillColor(59, 130, 246); // Blue
-      doc.roundedRect(startX[1], yPos, colWidth, 25, 5, 5, 'F');
-      doc.text('Tertib Administrasi', startX[1] + 10, yPos + 17);
-
-      // Tabel 3: Rendah Kesadaran
-      doc.setFillColor(239, 68, 68); // Red
-      doc.roundedRect(startX[2], yPos, colWidth, 25, 5, 5, 'F');
-      doc.text('Rendah Kesadaran', startX[2] + 10, yPos + 17);
-
-      yPos += 50;
-
-      // Data Ranking (max 10 baris)
-      const maxRows = 10;
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(8);
-      const rowHeight = 30; // Tinggi baris 30px
-
-      for (let i = 0; i < maxRows; i++) {
-        const emp1 = rankingData.topDisiplin[i];
-        const emp2 = rankingData.topTertib[i];
-        const emp3 = rankingData.topRendah[i];
-
-        // Kolom 1 - Disiplin Waktu
-        if (emp1) {
-          doc.setFillColor(i % 2 === 0 ? 240 : 255, 255, 240);
-          doc.rect(startX[0], yPos, colWidth, rowHeight, 'F');
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(`${i + 1}.`, startX[0] + 5, yPos + 17);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(9);
-          // Nama - potong jika terlalu panjang dan tambahkan ellipsis
-          const maxNameLength = Math.floor(colWidth / 7);
-          const displayName =
-            emp1.name.length > maxNameLength
-              ? emp1.name.substring(0, maxNameLength - 3) + '...'
-              : emp1.name;
-          doc.text(displayName, startX[0] + 24, yPos + 12);
-          doc.setFontSize(7.5);
-          doc.setTextColor(100, 100, 100);
-          const maxPosLength = Math.floor(colWidth / 5.5);
-          const displayPos =
-            emp1.position.length > maxPosLength
-              ? emp1.position.substring(0, maxPosLength - 3) + '...'
-              : emp1.position;
-          doc.text(displayPos, startX[0] + 24, yPos + 21);
-
-          // Hari Kerja (abu-abu)
-          doc.setTextColor(80, 80, 80);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
-          doc.text(
-            `${emp1.hariKerja} hr`,
-            startX[0] + colWidth - 85,
-            yPos + 17
-          );
-
-          // Total (warna hijau)
-          doc.setTextColor(0, 128, 0); // Hijau
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(
-            `${emp1.hijau}`,
-            startX[0] + colWidth - 60,
-            yPos + 17
-          );
-
-          // Persentase (warna hitam)
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(11);
-          doc.text(
-            `${emp1.persenHijau}%`,
-            startX[0] + colWidth - 35,
-            yPos + 17
-          );
-        }
-
-        // Kolom 2 - Tertib Administrasi
-        if (emp2) {
-          doc.setFillColor(240, 248, i % 2 === 0 ? 255 : 250);
-          doc.rect(startX[1], yPos, colWidth, rowHeight, 'F');
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(`${i + 1}.`, startX[1] + 5, yPos + 17);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(9);
-          const maxNameLength = Math.floor(colWidth / 7);
-          const displayName =
-            emp2.name.length > maxNameLength
-              ? emp2.name.substring(0, maxNameLength - 3) + '...'
-              : emp2.name;
-          doc.text(displayName, startX[1] + 24, yPos + 12);
-          doc.setFontSize(7.5);
-          doc.setTextColor(100, 100, 100);
-          const maxPosLength = Math.floor(colWidth / 5.5);
-          const displayPos =
-            emp2.position.length > maxPosLength
-              ? emp2.position.substring(0, maxPosLength - 3) + '...'
-              : emp2.position;
-          doc.text(displayPos, startX[1] + 24, yPos + 21);
-
-          // Hari Kerja (abu-abu)
-          doc.setTextColor(80, 80, 80);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
-          doc.text(
-            `${emp2.hariKerja} hr`,
-            startX[1] + colWidth - 85,
-            yPos + 17
-          );
-
-          // Total (warna biru)
-          doc.setTextColor(0, 0, 255); // Biru
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(
-            `${emp2.biru}`,
-            startX[1] + colWidth - 60,
-            yPos + 17
-          );
-
-          // Persentase (warna hitam)
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(11);
-          doc.text(`${emp2.persenBiru}%`, startX[1] + colWidth - 35, yPos + 17);
-        }
-
-        // Kolom 3 - Rendah Kesadaran
-        if (emp3) {
-          doc.setFillColor(255, i % 2 === 0 ? 240 : 250, 240);
-          doc.rect(startX[2], yPos, colWidth, rowHeight, 'F');
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(`${i + 1}.`, startX[2] + 5, yPos + 17);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(9);
-          const maxNameLength = Math.floor(colWidth / 7);
-          const displayName =
-            emp3.name.length > maxNameLength
-              ? emp3.name.substring(0, maxNameLength - 3) + '...'
-              : emp3.name;
-          doc.text(displayName, startX[2] + 24, yPos + 12);
-          doc.setFontSize(7.5);
-          doc.setTextColor(100, 100, 100);
-          const maxPosLength = Math.floor(colWidth / 5.5);
-          const displayPos =
-            emp3.position.length > maxPosLength
-              ? emp3.position.substring(0, maxPosLength - 3) + '...'
-              : emp3.position;
-          doc.text(displayPos, startX[2] + 24, yPos + 21);
-
-          // Hari Kerja (abu-abu)
-          doc.setTextColor(80, 80, 80);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
-          doc.text(
-            `${emp3.hariKerja} hr`,
-            startX[2] + colWidth - 85,
-            yPos + 17
-          );
-
-          // Total (warna merah)
-          doc.setTextColor(255, 0, 0); // Merah
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(
-            `${emp3.merah}`,
-            startX[2] + colWidth - 60,
-            yPos + 17
-          );
-
-          // Persentase (warna hitam)
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(11);
-          doc.text(
-            `${emp3.persenMerah}%`,
-            startX[2] + colWidth - 35,
-            yPos + 17
-          );
-        }
-
-        yPos += rowHeight;
-      }
-
-      // Keterangan perhitungan di bawah tabel peringkat
-      yPos += 10;
-      doc.setFontSize(7);
-      doc.setFont(undefined, 'italic');
-      doc.setTextColor(100, 100, 100);
-
-      const note1 = 'Keterangan: hr = Hari Kerja | Total = Jumlah hari | % = Persentase dari Hari Kerja';
-      doc.text(note1, startX[0], yPos);
-      yPos += 10;
-      const note2 = 'Contoh: 15 hr | 12 | 80% = Dari 15 hari kerja, ada 12 hari yang memenuhi kriteria (80%)';
-      doc.text(note2, startX[0], yPos);
-    }
-
-    // ============= HALAMAN 3-5: TABEL 1, 2, 3 =============
-    for (let i = 1; i <= 3; i++) {
-      doc.addPage();
-      const tableId = `tabel${i}`;
-      const table = document.getElementById(tableId);
-      if (!table) continue;
-
-      let tableTitle = '';
-      if (i === 1) tableTitle = '1. REKAP MESIN (DATA MENTAH)';
-      else if (i === 2) tableTitle = '2. KEDISIPLINAN WAKTU';
-      else if (i === 3) tableTitle = '3. EVALUASI KEHADIRAN';
-
-      // Clone table untuk capture jika hidden
-      const clone = table.cloneNode(true);
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.top = '-9999px';
-      container.style.left = '0';
-      container.style.width = '1200px';
-      container.style.backgroundColor = '#ffffff';
-      container.appendChild(clone);
-      document.body.appendChild(container);
-
-      let canvas;
-      try {
-        canvas = await html2canvas(clone, {
-          scale: 1.5, // Skala tabel tetap
-          backgroundColor: '#ffffff',
-          logging: false,
-        });
-      } finally {
-        document.body.removeChild(container);
-      }
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-
-      // Header Halaman
-      doc.setFillColor(79, 70, 229);
-      doc.rect(0, 0, pageWidth, 60, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
-      doc.text('Sistem Rekap Absensi', 40, 25);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
-
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text(tableTitle, 40, 80);
-
-      if (startDate && endDate) {
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        const periode = `Periode: ${new Date(startDate).toLocaleDateString(
-          'id-ID'
-        )} - ${new Date(endDate).toLocaleDateString('id-ID')}`;
-        doc.text(periode, pageWidth - 220, 80);
-      }
-
-      const marginTop = 100;
-      const marginLeft = 30;
-      const marginRight = 30;
-      const marginBottom = 50;
-
-      const contentWidth = pageWidth - marginLeft - marginRight;
-      // Untuk tabel 3, kurangi contentHeight agar ada ruang untuk panduan
-      const guideReservedSpace = (i === 3) ? 65 : 0; // Reservasi 65pt untuk panduan tabel 3 (lebih tinggi)
-      const contentHeight = pageHeight - marginTop - marginBottom - guideReservedSpace;
-
-      const ratio = Math.min(
-        contentWidth / imgWidth,
-        contentHeight / imgHeight
-      );
-      const scaledWidth = imgWidth * ratio;
-      const scaledHeight = imgHeight * ratio;
-
-      let yPosition = marginTop;
-      doc.addImage(
-        imgData,
-        'JPEG',
-        marginLeft,
-        yPosition,
-        scaledWidth,
-        scaledHeight
-      );
-
-      // ===== PANDUAN 4 KOTAK DI BAWAH TABEL (SELALU TAMPIL) =====
-      const guideY = yPosition + scaledHeight + 10; // 10pt spacing dari tabel
-      const guideBoxHeight = 50; // Lebih tinggi untuk teks yang lebih panjang
-
-      let guideBoxes = [];
-
-      if (i === 1) {
-        // Tabel 1: Rekap Mesin
-        guideBoxes = [
-          { label: 'BIRU', desc: 'Scan MASUK dan PULANG keduanya tercatat', color: [173, 216, 230] },
-          { label: 'KUNING', desc: 'Hanya scan MASUK saja atau PULANG saja', color: [255, 255, 153] },
-          { label: 'MERAH', desc: 'Tidak ada scan MASUK maupun PULANG (Alpha)', color: [255, 179, 179] },
-          { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
-        ];
-      } else if (i === 2) {
-        // Tabel 2: Kedisiplinan Waktu
-        guideBoxes = [
-          { label: 'HIJAU', desc: 'Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', color: [144, 238, 144] },
-          { label: 'KUNING', desc: 'Datang SETELAH jadwal (Terlambat)', color: [255, 255, 153] },
-          { label: 'MERAH', desc: 'Tidak scan sama sekali (Alpha)', color: [255, 179, 179] },
-          { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
-        ];
-      } else if (i === 3) {
-        // Tabel 3: Evaluasi Kehadiran
-        guideBoxes = [
-          { label: 'H', desc: 'Karyawan hadir (ada scan masuk)', color: [144, 238, 144] },
-          { label: 'T', desc: 'Hadir tapi datang setelah jadwal', color: [255, 255, 153] },
-          { label: 'A', desc: 'Tidak hadir (tidak ada scan)', color: [255, 179, 179] },
-          { label: 'L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
-        ];
-      }
-
-      const guideSpacing = 10;
-      const guideBoxWidth = (pageWidth - 80 - (3 * guideSpacing)) / 4;
-
-      guideBoxes.forEach((box, idx) => {
-        const xPos = 40 + idx * (guideBoxWidth + guideSpacing);
+      // 5 KOTAK INFORMASI UTAMA (1 BARIS)
+      const summaryBoxes = [
+        {
+          label: 'Pra-Kesimpulan', // Label di atas box
+          value: summaryData.predikat,
+          title: 'PREDIKAT', // Masuk ke dalam box sebagai title kecil
+          color: [240, 240, 255],
+          fontSize: 14,
+        },
+        {
+          label: 'Total Guru & Karyawan',
+          value: `${summaryData.totalKaryawan} orang`,
+          color: [230, 230, 240],
+          fontSize: 16,
+        },
+        {
+          label: 'Hari Kerja',
+          value: `${summaryData.effectiveHariKerja || 0} hari`, // NEW
+          subLabel: '(Selain Libur)',
+          color: [230, 230, 240],
+          fontSize: 16,
+        },
+        {
+          label: 'Total Hari Kerja G&K',
+          value: `${summaryData.totalHariKerja} hari`,
+          color: [230, 230, 240],
+          fontSize: 16,
+        },
+        {
+          label: 'Tingkat Kehadiran',
+          value: `${summaryData.persentaseKehadiran}%`,
+          color: [220, 220, 240],
+          fontSize: 16,
+        },
+      ];
+
+      const summarySpacing = 10;
+      // Bagi 5 kolom
+      const summaryBoxWidth = (pageWidth - 80 - (4 * summarySpacing)) / 5;
+      const summaryBoxHeight = 70;
+
+      summaryBoxes.forEach((box, idx) => {
+        const xPos = 40 + idx * (summaryBoxWidth + summarySpacing);
         doc.setFillColor(...box.color);
-        doc.roundedRect(xPos, guideY, guideBoxWidth, guideBoxHeight, 3, 3, 'F');
+        doc.roundedRect(xPos, yPos, summaryBoxWidth, summaryBoxHeight, 5, 5, 'F');
 
-        doc.setFontSize(7);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(box.label, xPos + 10, guideY + 15);
-
-        doc.setFontSize(6);
+        // Label (Title Kecil)
+        doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        // Split teks panjang menjadi beberapa baris
-        const descLines = doc.splitTextToSize(box.desc, guideBoxWidth - 20);
-        doc.text(descLines, xPos + 10, guideY + 28);
+
+        // Handle Predikat has specific label logic in array? No, simpler to just start printing
+        // Print Label
+        if (box.title) {
+          doc.text(box.title, xPos + 10, yPos + 20);
+        } else {
+          // Split label if too long
+          const splitLabel = doc.splitTextToSize(box.label, summaryBoxWidth - 20);
+          doc.text(splitLabel, xPos + 10, yPos + 20);
+        }
+
+        // Value
+        doc.setFontSize(box.fontSize);
+        doc.setFont(undefined, 'bold');
+        doc.text(box.value, xPos + 10, yPos + 45);
+
+        // Sublabel if exists
+        if (box.subLabel) {
+          doc.setFontSize(7);
+          doc.setFont(undefined, 'italic');
+          doc.text(box.subLabel, xPos + 10, yPos + 58);
+        }
       });
 
-      // Logika untuk handling tabel panjang (paging)
-      let heightLeft = scaledHeight - contentHeight;
-      while (heightLeft > 0) {
-        doc.addPage();
-        // ... (Header halaman lanjutan sama seperti sebelumnya) ...
-        doc.setFillColor(79, 70, 229);
-        doc.rect(0, 0, pageWidth, 50, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text('MTs. AN-NUR BULULAWANG', 40, 20);
+      yPos += summaryBoxHeight + 30;
+
+      await updateProgressWithDelay(40); // Progress 40%
+
+      // Rincian Kehadiran Header
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setFillColor(220, 220, 240);
+      doc.roundedRect(40, yPos, pageWidth - 80, 30, 5, 5, 'F');
+      doc.text('Rincian Kehadiran:', 60, yPos + 20);
+
+      yPos += 40;
+
+      const details = [
+        {
+          label: 'Hadir Total',
+          value: `${summaryData.totalHadir} (${summaryData.persentaseKehadiran}%)`,
+          color: [200, 230, 255],
+        },
+        {
+          label: 'Tepat Waktu',
+          value: `${summaryData.totalTepat} (${summaryData.persentaseTepat}%)`,
+          color: [200, 255, 200],
+        },
+        {
+          label: 'Terlambat',
+          value: `${summaryData.totalTelat} (${summaryData.persentaseTelat}%)`,
+          color: [255, 255, 200],
+        },
+        {
+          label: 'Alfa',
+          value: `${summaryData.totalAlfa} (${summaryData.persentaseAlfa}%)`,
+          color: [255, 200, 200],
+        },
+      ];
+
+      // 4 box dalam 1 baris, lebar sama dan simetris (Full Justified)
+      const detailSpacing = 15; // Spacing antar box
+      const detailBoxWidth = (pageWidth - 80 - (3 * detailSpacing)) / 4;
+      const detailBoxHeight = 60;
+
+      details.forEach((detail, idx) => {
+        const xPos = 40 + idx * (detailBoxWidth + detailSpacing);
+        doc.setFillColor(...detail.color);
+        doc.roundedRect(xPos, yPos, detailBoxWidth, detailBoxHeight, 5, 5, 'F');
+
         doc.setFontSize(11);
         doc.setFont(undefined, 'normal');
-        doc.text(`${tableTitle} (lanjutan)`, 40, 38);
+        doc.text(detail.label, xPos + 15, yPos + 25);
 
-        const nextPageMarginTop = 70;
-        yPosition = nextPageMarginTop - (scaledHeight - heightLeft);
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(detail.value, xPos + 15, yPos + 45);
+      });
+
+      yPos += detailBoxHeight + 30;
+
+      // ============= DESKRIPSI KESIMPULAN (DYNAMIC HEIGHT) =============
+
+      // 1. Hitung dulu semua teks untuk menentukan tinggi kotak
+      const contentWidth = pageWidth - 120; // Lebar area teks (margin kiri 60, kanan 60)
+
+      // Paragraf Pembuka
+      const introText = `Profil absensi periode ${summaryData.periode} menunjukkan tingkat kehadiran ${summaryData.persentaseKehadiran}% yang termasuk kategori ${summaryData.predikat}.`;
+      const introLines = doc.splitTextToSize(introText, contentWidth);
+
+      // Analisis Kehadiran
+      let analisisText = '';
+      if (summaryData.persentaseKehadiran >= 96) {
+        analisisText = 'Tingkat kehadiran sangat luar biasa dengan konsistensi kehadiran hampir sempurna.';
+      } else if (summaryData.persentaseKehadiran >= 91) {
+        analisisText = 'Tingkat kehadiran sangat memuaskan dengan komitmen tinggi dari guru & karyawan.';
+      } else if (summaryData.persentaseKehadiran >= 86) {
+        analisisText = 'Tingkat kehadiran baik dan menunjukkan dedikasi yang konsisten.';
+      } else if (summaryData.persentaseKehadiran >= 81) {
+        analisisText = 'Tingkat kehadiran cukup baik namun masih ada ruang perbaikan.';
+      } else if (summaryData.persentaseKehadiran >= 76) {
+        analisisText = 'Tingkat kehadiran di bawah standar dengan cukup banyak ketidakhadiran.';
+      } else {
+        analisisText = 'Tingkat kehadiran di bawah standar minimal dengan banyak ketidakhadiran tanpa keterangan jelas.';
+      }
+      const analisisLines = doc.splitTextToSize(analisisText, contentWidth);
+
+      // Kesadaran Absensi
+      let kesadaranText = '';
+      if (summaryData.persentaseKehadiran >= 96) {
+        kesadaranText = 'Ketertiban scan masuk-pulang sangat sempurna. Hampir semua guru & karyawan konsisten melakukan scan lengkap.';
+      } else if (summaryData.persentaseKehadiran >= 91) {
+        kesadaranText = 'Ketertiban scan masuk-pulang sangat baik. Mayoritas konsisten melakukan scan lengkap setiap hari.';
+      } else if (summaryData.persentaseKehadiran >= 86) {
+        kesadaranText = 'Ketertiban scan masuk-pulang baik. Sebagian besar melakukan scan dengan tertib.';
+      } else if (summaryData.persentaseKehadiran >= 81) {
+        kesadaranText = 'Ketertiban perlu ditingkatkan. Masih ditemukan kasus lupa scan pulang atau tidak scan sama sekali.';
+      } else if (summaryData.persentaseKehadiran >= 76) {
+        kesadaranText = 'Ketertiban scan masuk-pulang kurang. Cukup banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap.';
+      } else {
+        kesadaranText = 'Ketertiban scan masuk-pulang rendah. Banyak guru & karyawan lupa scan pulang sehingga data tidak lengkap, menunjukkan kurangnya kesadaran administrasi.';
+      }
+      const kesadaranLines = doc.splitTextToSize(kesadaranText, contentWidth);
+
+      // Kedisiplinan Waktu
+      let kedisiplinanText = '';
+      if (summaryData.persentaseKehadiran >= 96) {
+        kedisiplinanText = 'Ketepatan waktu sangat sempurna. Hampir semua datang sebelum jadwal yang ditentukan.';
+      } else if (summaryData.persentaseKehadiran >= 91) {
+        kedisiplinanText = 'Ketepatan waktu sangat baik. Sebagian besar datang sebelum atau tepat jadwal yang ditentukan.';
+      } else if (summaryData.persentaseKehadiran >= 86) {
+        kedisiplinanText = 'Ketepatan waktu baik. Mayoritas guru & karyawan datang tepat waktu sesuai jadwal.';
+      } else if (summaryData.persentaseKehadiran >= 81) {
+        kedisiplinanText = 'Ketepatan waktu bervariasi. Sebagian disiplin namun masih ada yang sering terlambat.';
+      } else if (summaryData.persentaseKehadiran >= 76) {
+        kedisiplinanText = 'Ketepatan waktu kurang. Cukup banyak guru & karyawan datang terlambat dari jadwal.';
+      } else {
+        kedisiplinanText = 'Ketepatan waktu rendah. Banyak guru & karyawan datang terlambat setelah jadwal dimulai.';
+      }
+      const kedisiplinanLines = doc.splitTextToSize(kedisiplinanText, contentWidth);
+
+      // Rekomendasi/Apresiasi
+      const rekomendasiLabel = summaryData.persentaseKehadiran >= 91 ? 'Apresiasi:' : 'Rekomendasi:';
+      let rekomendasiText = '';
+      if (summaryData.persentaseKehadiran >= 96) {
+        rekomendasiText = 'Prestasi luar biasa! Pertahankan kedisiplinan sempurna ini dan jadilah teladan bagi yang lain.';
+      } else if (summaryData.persentaseKehadiran >= 91) {
+        rekomendasiText = 'Prestasi sangat baik! Pertahankan disiplin ini dan tingkatkan menuju level UNGGUL.';
+      } else if (summaryData.persentaseKehadiran >= 86) {
+        rekomendasiText = 'Performa baik, pertahankan dan tingkatkan konsistensi untuk mencapai kategori BAIK SEKALI.';
+      } else if (summaryData.persentaseKehadiran >= 81) {
+        rekomendasiText = 'Disarankan reminder rutin dan evaluasi berkala untuk mencapai kategori BAIK atau BAIK SEKALI.';
+      } else if (summaryData.persentaseKehadiran >= 76) {
+        rekomendasiText = 'Perlu pembinaan dan monitoring ketat untuk perbaikan kedisiplinan secara bertahap.';
+      } else {
+        rekomendasiText = 'Perlu evaluasi individual, pembinaan intensif, dan penerapan sanksi tegas untuk perbaikan kedisiplinan.';
+      }
+      const rekomendasiLines = doc.splitTextToSize(rekomendasiText, contentWidth);
+
+      // Hitung total tinggi yang dibutuhkan
+      // Header (20) + Intro (lines*12 + 10) + 4 section * (Title 12 + lines*12 + 8) + Padding Bottom (20)
+      let totalBoxHeight = 20 + (introLines.length * 12 + 10) + 20; // Base padding
+      totalBoxHeight += 12 + analisisLines.length * 12 + 8;
+      totalBoxHeight += 12 + kesadaranLines.length * 12 + 8;
+      totalBoxHeight += 12 + kedisiplinanLines.length * 12 + 8;
+      totalBoxHeight += 12 + rekomendasiLines.length * 12;
+
+      // Gambar Kotak Background
+      doc.setFillColor(245, 245, 250);
+      doc.setDrawColor(200, 200, 220);
+      doc.setLineWidth(1.5);
+      doc.roundedRect(40, yPos, pageWidth - 80, totalBoxHeight, 5, 5, 'FD');
+
+      // Render Teks
+      let textY = yPos + 25;
+
+      // Judul
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(79, 70, 229);
+      doc.text('Deskripsi Kesimpulan Profil Absensi', 60, textY);
+      textY += 20;
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+
+      // Intro
+      doc.text(introLines, 60, textY);
+      textY += introLines.length * 12 + 10;
+
+      // Analisis
+      doc.setFont(undefined, 'bold');
+      doc.text('Analisis Kehadiran:', 60, textY);
+      textY += 12;
+      doc.setFont(undefined, 'normal');
+      doc.text(analisisLines, 60, textY);
+      textY += analisisLines.length * 12 + 8;
+
+      // Kesadaran
+      doc.setFont(undefined, 'bold');
+      doc.text('Kesadaran Absensi:', 60, textY);
+      textY += 12;
+      doc.setFont(undefined, 'normal');
+      doc.text(kesadaranLines, 60, textY);
+      textY += kesadaranLines.length * 12 + 8;
+
+      // Kedisiplinan
+      doc.setFont(undefined, 'bold');
+      doc.text('Kedisiplinan Waktu:', 60, textY);
+      textY += 12;
+      doc.setFont(undefined, 'normal');
+      doc.text(kedisiplinanLines, 60, textY);
+      textY += kedisiplinanLines.length * 12 + 8;
+
+      // Rekomendasi
+      doc.setFont(undefined, 'bold');
+      doc.text(rekomendasiLabel, 60, textY);
+      textY += 12;
+      doc.setFont(undefined, 'normal');
+      doc.text(rekomendasiLines, 60, textY);
+
+      await updateProgressWithDelay(50); // Progress 50%
+
+      // ============= HALAMAN 2: EVALUASI KATEGORI =============
+      if (categoryEvaluation) {
+        doc.addPage();
+
+        // Header
+        doc.setFillColor(79, 70, 229); // Indigo - sama dengan header Peringkat
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.text('EVALUASI BERDASARKAN KATEGORI', 40, 25);
+        doc.setFontSize(14);
+        doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Periode: ${summaryData.periode}`, 40, 55);
+
+        yPos = 80;
+        doc.setTextColor(0, 0, 0);
+
+        // 1. KEHADIRAN
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('1. KEHADIRAN', 40, yPos);
+        yPos += 15;
+
+        const catWidth = (pageWidth - 100) / 3;
+        const catX = [40, 40 + catWidth + 10, 40 + 2 * (catWidth + 10)];
+        const categories = ['Pimpinan', 'Guru', 'Tendik'];
+
+        categories.forEach((cat, idx) => {
+          const data = categoryEvaluation[cat];
+
+          // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
+          if (cat === 'Pimpinan') {
+            doc.setFillColor(200, 230, 255); // Soft Blue
+          } else if (cat === 'Guru') {
+            doc.setFillColor(200, 255, 200); // Soft Green
+          } else {
+            doc.setFillColor(255, 255, 200); // Soft Yellow
+          }
+          doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+          doc.setFontSize(11);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(cat, catX[idx] + 10, yPos + 15);
+
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'normal');
+          doc.text(`Jumlah: ${data.count} orang`, catX[idx] + 10, yPos + 28);
+
+          // Persentase besar
+          doc.setFontSize(26);
+          doc.setFont(undefined, 'bold');
+          const persenText = `${data.persenKehadiran}%`;
+          const persenWidth = doc.getTextWidth(persenText);
+          doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+          // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
+          const predikat = getPredicate(data.persenKehadiran);
+          const predikatText = predikat;
+
+          // Ukur lebar teks predikat
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          const predikatWidth = doc.getTextWidth(predikatText);
+          const badgeWidth = predikatWidth + 12;
+          const badgeHeight = 16;
+          const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
+          const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
+
+          // Gambar badge dengan border radius
+          doc.setFillColor(255, 255, 255); // Putih
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.5);
+          doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+          // Teks predikat di dalam badge
+          doc.setTextColor(0, 0, 0);
+          doc.text(predikatText, badgeX + 6, badgeY + 11);
+
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'normal');
+          doc.text(`${data.totalHadir} dari ${data.totalHariKerja} hari`, catX[idx] + 10, yPos + 65);
+        });
+
+        yPos += 90;
+
+        // 2. KEDISIPLINAN WAKTU
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('2. KEDISIPLINAN WAKTU', 40, yPos);
+        yPos += 15;
+
+        categories.forEach((cat, idx) => {
+          const data = categoryEvaluation[cat];
+
+          // Kotak berwarna berbeda untuk setiap kategori - SOFT COLORS
+          if (cat === 'Pimpinan') {
+            doc.setFillColor(200, 230, 255); // Soft Blue
+          } else if (cat === 'Guru') {
+            doc.setFillColor(200, 255, 200); // Soft Green
+          } else {
+            doc.setFillColor(255, 255, 200); // Soft Yellow
+          }
+          doc.roundedRect(catX[idx], yPos, catWidth, 75, 5, 5, 'F');
+
+          doc.setFontSize(11);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(cat, catX[idx] + 10, yPos + 15);
+
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'normal');
+          doc.text('Tepat Waktu', catX[idx] + 10, yPos + 28);
+
+          // Persentase besar
+          doc.setFontSize(26);
+          doc.setFont(undefined, 'bold');
+          const persenText = `${data.persenTepat}%`;
+          const persenWidth = doc.getTextWidth(persenText);
+          doc.text(persenText, catX[idx] + 10, yPos + 52);
+
+          // Predikat dalam badge/kontainer terpisah - DI SAMPING PERSEN
+          const predikat = getPredicate(data.persenTepat);
+          const predikatText = predikat;
+
+          // Ukur lebar teks predikat
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          const predikatWidth = doc.getTextWidth(predikatText);
+          const badgeWidth = predikatWidth + 12;
+          const badgeHeight = 16;
+          const badgeX = catX[idx] + 10 + persenWidth + 8; // Di samping persen dengan jarak 8px
+          const badgeY = yPos + 52 - 12; // Sejajar dengan baseline persen
+
+          // Gambar badge dengan border radius
+          doc.setFillColor(255, 255, 255); // Putih
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.5);
+          doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'FD');
+
+          // Teks predikat di dalam badge
+          doc.setTextColor(0, 0, 0);
+          doc.text(predikatText, badgeX + 6, badgeY + 11);
+
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'normal');
+          doc.text(`${data.totalTepat} dari ${data.totalHadir} hari hadir`, catX[idx] + 10, yPos + 65);
+        });
+
+        yPos += 90;
+
+        // REKOMENDASI - Static Content Matching Tab 2
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(79, 70, 229);
+        doc.setLineWidth(2);
+        doc.roundedRect(40, yPos, pageWidth - 80, 165, 5, 5, 'FD');
+
+        // Header Rekomendasi
+        doc.setFillColor(79, 70, 229);
+        doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text('REKOMENDASI', 50, yPos + 17);
+
+        doc.setTextColor(0, 0, 0);
+
+        // LAYOUT 2 KOLOM
+        const leftColX = 50;
+        const rightColX = (pageWidth / 2) + 20;
+        const colWidth = (pageWidth / 2) - 60;
+
+        let recLeftY = yPos + 45;
+        let recRightY = yPos + 45;
+
+        // ===== KOLOM KIRI: REKOMENDASI PER KATEGORI =====
+
+        // Rekomendasi Pimpinan
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(59, 130, 246);
+        doc.text('1. Pimpinan:', leftColX, recLeftY);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        recLeftY += 12;
+        const pimpinanText = 'Semua pimpinan dapat mempertahankan atau meningkatkan tingkat kehadiran mereka di masa depan.';
+        const pimpinanLines = doc.splitTextToSize(pimpinanText, colWidth);
+        doc.text(pimpinanLines, leftColX + 5, recLeftY);
+        recLeftY += pimpinanLines.length * 11 + 10;
+
+        // Rekomendasi Guru
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(34, 197, 94);
+        doc.text('2. Guru:', leftColX, recLeftY);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        recLeftY += 12;
+        const guruText = 'Perlunya peningkatan dalam hal kehadiran bagi beberapa individu.';
+        const guruLines = doc.splitTextToSize(guruText, colWidth);
+        doc.text(guruLines, leftColX + 5, recLeftY);
+        recLeftY += guruLines.length * 11 + 10;
+
+        // Rekomendasi Tendik
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(251, 191, 36);
+        doc.text('3. Tendik:', leftColX, recLeftY);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        recLeftY += 12;
+        const tendikText = 'Perlu diterapkan upaya perbaikan dan penegasan disiplin kehadiran.';
+        const tendikLines = doc.splitTextToSize(tendikText, colWidth);
+        doc.text(tendikLines, leftColX + 5, recLeftY);
+
+        // ===== KOLOM KANAN: TINDAKAN UMUM =====
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Rekomendasi Umum:', rightColX, recRightY); // Match Title with Tab 2 "Rekomendasi Umum"
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        recRightY += 15;
+
+        const tindakan1 = doc.splitTextToSize('• Meningkatkan pemantauan waktu kedatangan dan kepulangan', colWidth);
+        doc.text(tindakan1, rightColX + 5, recRightY);
+        recRightY += tindakan1.length * 11 + 8;
+
+        const tindakan2 = doc.splitTextToSize('• Mengadakan pembinaan manajemen waktu', colWidth);
+        doc.text(tindakan2, rightColX + 5, recRightY);
+        recRightY += tindakan2.length * 11 + 8;
+
+        const tindakan3 = doc.splitTextToSize('• Menerapkan sanksi untuk keterlambatan dan beri penghargaan bagi yang tepat waktu', colWidth);
+        doc.text(tindakan3, rightColX + 5, recRightY);
+      }
+
+      await updateProgressWithDelay(60); // Progress 60%
+      await updateProgressWithDelay(70); // Progress 70%
+
+      // ============= HALAMAN 3: RANKING (3 KOLOM) =============
+      if (rankingData) {
+        doc.addPage();
+        yPos = 40;
+
+        // Header Peringkat
+        doc.setFillColor(79, 70, 229);
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.text('PERINGKAT GURU & KARYAWAN', 40, 25);
+
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Periode: ${summaryData.periode}`, 40, 55);
+
+        yPos = 80;
+
+        // Lebar kolom untuk 3 tabel
+        const colWidth = (pageWidth - 100) / 3;
+        const startX = [40, 40 + colWidth + 10, 40 + 2 * (colWidth + 10)];
+
+        // Tabel 1: Disiplin Waktu
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(34, 197, 94); // Green
+        doc.roundedRect(startX[0], yPos, colWidth, 25, 5, 5, 'F');
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('Disiplin Waktu Tertinggi', startX[0] + 10, yPos + 17);
+
+        // Tabel 2: Tertib Administrasi
+        doc.setFillColor(59, 130, 246); // Blue
+        doc.roundedRect(startX[1], yPos, colWidth, 25, 5, 5, 'F');
+        doc.text('Tertib Administrasi', startX[1] + 10, yPos + 17);
+
+        // Tabel 3: Rendah Kesadaran
+        doc.setFillColor(239, 68, 68); // Red
+        doc.roundedRect(startX[2], yPos, colWidth, 25, 5, 5, 'F');
+        doc.text('Rendah Kesadaran', startX[2] + 10, yPos + 17);
+
+        yPos += 50;
+
+        // Data Ranking (max 10 baris)
+        const maxRows = 10;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(8);
+        const rowHeight = 30; // Tinggi baris 30px
+
+        for (let i = 0; i < maxRows; i++) {
+          const emp1 = rankingData.topDisiplin[i];
+          const emp2 = rankingData.topTertib[i];
+          const emp3 = rankingData.topRendah[i];
+
+          // Kolom 1 - Disiplin Waktu
+          if (emp1) {
+            doc.setFillColor(i % 2 === 0 ? 240 : 255, 255, 240);
+            doc.rect(startX[0], yPos, colWidth, rowHeight, 'F');
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(`${i + 1}.`, startX[0] + 5, yPos + 17);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            // Nama - potong jika terlalu panjang dan tambahkan ellipsis
+            const maxNameLength = Math.floor(colWidth / 7);
+            const displayName =
+              emp1.name.length > maxNameLength
+                ? emp1.name.substring(0, maxNameLength - 3) + '...'
+                : emp1.name;
+            doc.text(displayName, startX[0] + 24, yPos + 12);
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 100, 100);
+            const maxPosLength = Math.floor(colWidth / 5.5);
+            const displayPos =
+              emp1.position.length > maxPosLength
+                ? emp1.position.substring(0, maxPosLength - 3) + '...'
+                : emp1.position;
+            doc.text(displayPos, startX[0] + 24, yPos + 21);
+
+            // Hari Kerja (abu-abu)
+            doc.setTextColor(80, 80, 80);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.text(
+              `${emp1.hariKerja} hr`,
+              startX[0] + colWidth - 85,
+              yPos + 17
+            );
+
+            // Total (warna hijau)
+            doc.setTextColor(0, 128, 0); // Hijau
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(
+              `${emp1.hijau}`,
+              startX[0] + colWidth - 60,
+              yPos + 17
+            );
+
+            // Persentase (warna hitam)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.text(
+              `${emp1.persenHijau}%`,
+              startX[0] + colWidth - 35,
+              yPos + 17
+            );
+          }
+
+          // Kolom 2 - Tertib Administrasi
+          if (emp2) {
+            doc.setFillColor(240, 248, i % 2 === 0 ? 255 : 250);
+            doc.rect(startX[1], yPos, colWidth, rowHeight, 'F');
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(`${i + 1}.`, startX[1] + 5, yPos + 17);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const maxNameLength = Math.floor(colWidth / 7);
+            const displayName =
+              emp2.name.length > maxNameLength
+                ? emp2.name.substring(0, maxNameLength - 3) + '...'
+                : emp2.name;
+            doc.text(displayName, startX[1] + 24, yPos + 12);
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 100, 100);
+            const maxPosLength = Math.floor(colWidth / 5.5);
+            const displayPos =
+              emp2.position.length > maxPosLength
+                ? emp2.position.substring(0, maxPosLength - 3) + '...'
+                : emp2.position;
+            doc.text(displayPos, startX[1] + 24, yPos + 21);
+
+            // Hari Kerja (abu-abu)
+            doc.setTextColor(80, 80, 80);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.text(
+              `${emp2.hariKerja} hr`,
+              startX[1] + colWidth - 85,
+              yPos + 17
+            );
+
+            // Total (warna biru)
+            doc.setTextColor(0, 0, 255); // Biru
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(
+              `${emp2.biru}`,
+              startX[1] + colWidth - 60,
+              yPos + 17
+            );
+
+            // Persentase (warna hitam)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.text(`${emp2.persenBiru}%`, startX[1] + colWidth - 35, yPos + 17);
+          }
+
+          // Kolom 3 - Rendah Kesadaran
+          if (emp3) {
+            doc.setFillColor(255, i % 2 === 0 ? 240 : 250, 240);
+            doc.rect(startX[2], yPos, colWidth, rowHeight, 'F');
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(`${i + 1}.`, startX[2] + 5, yPos + 17);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const maxNameLength = Math.floor(colWidth / 7);
+            const displayName =
+              emp3.name.length > maxNameLength
+                ? emp3.name.substring(0, maxNameLength - 3) + '...'
+                : emp3.name;
+            doc.text(displayName, startX[2] + 24, yPos + 12);
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 100, 100);
+            const maxPosLength = Math.floor(colWidth / 5.5);
+            const displayPos =
+              emp3.position.length > maxPosLength
+                ? emp3.position.substring(0, maxPosLength - 3) + '...'
+                : emp3.position;
+            doc.text(displayPos, startX[2] + 24, yPos + 21);
+
+            // Hari Kerja (abu-abu)
+            doc.setTextColor(80, 80, 80);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.text(
+              `${emp3.hariKerja} hr`,
+              startX[2] + colWidth - 85,
+              yPos + 17
+            );
+
+            // Total (warna merah)
+            doc.setTextColor(255, 0, 0); // Merah
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text(
+              `${emp3.merah}`,
+              startX[2] + colWidth - 60,
+              yPos + 17
+            );
+
+            // Persentase (warna hitam)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.text(
+              `${emp3.persenMerah}%`,
+              startX[2] + colWidth - 35,
+              yPos + 17
+            );
+          }
+
+          yPos += rowHeight;
+        }
+
+        // Keterangan perhitungan di bawah tabel peringkat
+        yPos += 10;
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'italic');
+        doc.setTextColor(100, 100, 100);
+
+        const note1 = 'Keterangan: hr = Hari Kerja | Total = Jumlah hari | % = Persentase dari Hari Kerja';
+        doc.text(note1, startX[0], yPos);
+        yPos += 10;
+        const note2 = 'Contoh: 15 hr | 12 | 80% = Dari 15 hari kerja, ada 12 hari yang memenuhi kriteria (80%)';
+        doc.text(note2, startX[0], yPos);
+      }
+
+      // ============= HALAMAN 3-5: TABEL 1, 2, 3 =============
+      for (let i = 1; i <= 3; i++) {
+        doc.addPage();
+        const tableId = `tabel${i}`;
+        const table = document.getElementById(tableId);
+        if (!table) continue;
+
+        let tableTitle = '';
+        if (i === 1) tableTitle = '1. REKAP MESIN (DATA MENTAH)';
+        else if (i === 2) tableTitle = '2. KEDISIPLINAN WAKTU';
+        else if (i === 3) tableTitle = '3. EVALUASI KEHADIRAN';
+
+        // Clone table untuk capture jika hidden
+        const clone = table.cloneNode(true);
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.top = '-9999px';
+        container.style.left = '0';
+        container.style.width = '1200px';
+        container.style.backgroundColor = '#ffffff';
+        container.appendChild(clone);
+        document.body.appendChild(container);
+
+        let canvas;
+        try {
+          canvas = await html2canvas(clone, {
+            scale: 1.5, // Skala tabel tetap
+            backgroundColor: '#ffffff',
+            logging: false,
+          });
+        } finally {
+          document.body.removeChild(container);
+        }
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+
+        // Header Halaman
+        doc.setFillColor(79, 70, 229);
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text('Sistem Rekap Absensi', 40, 25);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'normal');
+        doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(tableTitle, 40, 80);
+
+        if (startDate && endDate) {
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          const periode = `Periode: ${new Date(startDate).toLocaleDateString(
+            'id-ID'
+          )} - ${new Date(endDate).toLocaleDateString('id-ID')}`;
+          doc.text(periode, pageWidth - 220, 80);
+        }
+
+        const marginTop = 100;
+        const marginLeft = 30;
+        const marginRight = 30;
+        const marginBottom = 50;
+
+        const contentWidth = pageWidth - marginLeft - marginRight;
+        // Untuk tabel 3, kurangi contentHeight agar ada ruang untuk panduan
+        const guideReservedSpace = (i === 3) ? 65 : 0; // Reservasi 65pt untuk panduan tabel 3 (lebih tinggi)
+        const contentHeight = pageHeight - marginTop - marginBottom - guideReservedSpace;
+
+        const ratio = Math.min(
+          contentWidth / imgWidth,
+          contentHeight / imgHeight
+        );
+        const scaledWidth = imgWidth * ratio;
+        const scaledHeight = imgHeight * ratio;
+
+        let yPosition = marginTop;
         doc.addImage(
           imgData,
           'JPEG',
@@ -2466,267 +2484,345 @@ const AttendanceRecapSystem = () => {
           scaledWidth,
           scaledHeight
         );
-        heightLeft -= pageHeight - nextPageMarginTop - marginBottom;
+
+        // ===== PANDUAN 4 KOTAK DI BAWAH TABEL (SELALU TAMPIL) =====
+        const guideY = yPosition + scaledHeight + 10; // 10pt spacing dari tabel
+        const guideBoxHeight = 50; // Lebih tinggi untuk teks yang lebih panjang
+
+        let guideBoxes = [];
+
+        if (i === 1) {
+          // Tabel 1: Rekap Mesin
+          guideBoxes = [
+            { label: 'BIRU', desc: 'Scan MASUK dan PULANG keduanya tercatat', color: [173, 216, 230] },
+            { label: 'KUNING', desc: 'Hanya scan MASUK saja atau PULANG saja', color: [255, 255, 153] },
+            { label: 'MERAH', desc: 'Tidak ada scan MASUK maupun PULANG (Alpha)', color: [255, 179, 179] },
+            { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
+          ];
+        } else if (i === 2) {
+          // Tabel 2: Kedisiplinan Waktu
+          guideBoxes = [
+            { label: 'HIJAU', desc: 'Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', color: [144, 238, 144] },
+            { label: 'KUNING', desc: 'Datang SETELAH jadwal (Terlambat)', color: [255, 255, 153] },
+            { label: 'MERAH', desc: 'Tidak scan sama sekali (Alpha)', color: [255, 179, 179] },
+            { label: 'PUTIH + L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
+          ];
+        } else if (i === 3) {
+          // Tabel 3: Evaluasi Kehadiran
+          guideBoxes = [
+            { label: 'H', desc: 'Karyawan hadir (ada scan masuk)', color: [144, 238, 144] },
+            { label: 'T', desc: 'Hadir tapi datang setelah jadwal', color: [255, 255, 153] },
+            { label: 'A', desc: 'Tidak hadir (tidak ada scan)', color: [255, 179, 179] },
+            { label: 'L', desc: 'Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', color: [255, 255, 255] },
+          ];
+        }
+
+        const guideSpacing = 10;
+        const guideBoxWidth = (pageWidth - 80 - (3 * guideSpacing)) / 4;
+
+        guideBoxes.forEach((box, idx) => {
+          const xPos = 40 + idx * (guideBoxWidth + guideSpacing);
+          doc.setFillColor(...box.color);
+          doc.roundedRect(xPos, guideY, guideBoxWidth, guideBoxHeight, 3, 3, 'F');
+
+          doc.setFontSize(7);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(box.label, xPos + 10, guideY + 15);
+
+          doc.setFontSize(6);
+          doc.setFont(undefined, 'normal');
+          // Split teks panjang menjadi beberapa baris
+          const descLines = doc.splitTextToSize(box.desc, guideBoxWidth - 20);
+          doc.text(descLines, xPos + 10, guideY + 28);
+        });
+
+        // Logika untuk handling tabel panjang (paging)
+        let heightLeft = scaledHeight - contentHeight;
+        while (heightLeft > 0) {
+          doc.addPage();
+          // ... (Header halaman lanjutan sama seperti sebelumnya) ...
+          doc.setFillColor(79, 70, 229);
+          doc.rect(0, 0, pageWidth, 50, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('MTs. AN-NUR BULULAWANG', 40, 20);
+          doc.setFontSize(11);
+          doc.setFont(undefined, 'normal');
+          doc.text(`${tableTitle} (lanjutan)`, 40, 38);
+
+          const nextPageMarginTop = 70;
+          yPosition = nextPageMarginTop - (scaledHeight - heightLeft);
+          doc.addImage(
+            imgData,
+            'JPEG',
+            marginLeft,
+            yPosition,
+            scaledWidth,
+            scaledHeight
+          );
+          heightLeft -= pageHeight - nextPageMarginTop - marginBottom;
+        }
       }
-    }
 
-    // ============= HALAMAN 6: PANDUAN LENGKAP (3 KOLOM) =============
-    doc.addPage();
+      // ============= HALAMAN 6: PANDUAN LENGKAP (3 KOLOM) =============
+      doc.addPage();
 
-    // Header Halaman Panduan
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, pageWidth, 60, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text('PANDUAN LENGKAP 3 TABEL REKAP', 40, 25);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
+      // Header Halaman Panduan
+      doc.setFillColor(79, 70, 229);
+      doc.rect(0, 0, pageWidth, 60, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text('PANDUAN LENGKAP 3 TABEL REKAP', 40, 25);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 45);
 
-    yPos = 80;
-    doc.setTextColor(0, 0, 0);
+      yPos = 80;
+      doc.setTextColor(0, 0, 0);
 
-    // Lebar kolom untuk 3 panduan
-    const colWidth = (pageWidth - 100) / 3;
-    const startX = [40, 40 + colWidth + 10, 40 + 2 * (colWidth + 10)];
+      // Lebar kolom untuk 3 panduan
+      const colWidth = (pageWidth - 100) / 3;
+      const startX = [40, 40 + colWidth + 10, 40 + 2 * (colWidth + 10)];
 
-    // ========== KOLOM 1: TABEL 1 - REKAP MESIN ==========
-    doc.setFillColor(59, 130, 246); // Blue
-    doc.roundedRect(startX[0], yPos, colWidth, 30, 5, 5, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text('TABEL 1: REKAP MESIN', startX[0] + 10, yPos + 20);
+      // ========== KOLOM 1: TABEL 1 - REKAP MESIN ==========
+      doc.setFillColor(59, 130, 246); // Blue
+      doc.roundedRect(startX[0], yPos, colWidth, 30, 5, 5, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('TABEL 1: REKAP MESIN', startX[0] + 10, yPos + 20);
 
-    // ========== KOLOM 2: TABEL 2 - KEDISIPLINAN ==========
-    doc.setFillColor(34, 197, 94); // Green
-    doc.roundedRect(startX[1], yPos, colWidth, 30, 5, 5, 'F');
-    doc.text('TABEL 2: KEDISIPLINAN', startX[1] + 10, yPos + 20);
+      // ========== KOLOM 2: TABEL 2 - KEDISIPLINAN ==========
+      doc.setFillColor(34, 197, 94); // Green
+      doc.roundedRect(startX[1], yPos, colWidth, 30, 5, 5, 'F');
+      doc.text('TABEL 2: KEDISIPLINAN', startX[1] + 10, yPos + 20);
 
-    // ========== KOLOM 3: TABEL 3 - EVALUASI ==========
-    doc.setFillColor(168, 85, 247); // Purple
-    doc.roundedRect(startX[2], yPos, colWidth, 30, 5, 5, 'F');
-    doc.text('TABEL 3: EVALUASI', startX[2] + 10, yPos + 20);
+      // ========== KOLOM 3: TABEL 3 - EVALUASI ==========
+      doc.setFillColor(168, 85, 247); // Purple
+      doc.roundedRect(startX[2], yPos, colWidth, 30, 5, 5, 'F');
+      doc.text('TABEL 3: EVALUASI', startX[2] + 10, yPos + 20);
 
-    yPos += 45;
-    doc.setTextColor(0, 0, 0);
+      yPos += 45;
+      doc.setTextColor(0, 0, 0);
 
-    // Subtitle
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'normal');
-    doc.text('Data Mentah Mesin', startX[0] + 10, yPos);
-    doc.text('Evaluasi Disiplin Waktu', startX[1] + 10, yPos);
-    doc.text('Evaluasi Kehadiran', startX[2] + 10, yPos);
+      // Subtitle
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text('Data Mentah Mesin', startX[0] + 10, yPos);
+      doc.text('Evaluasi Disiplin Waktu', startX[1] + 10, yPos);
+      doc.text('Evaluasi Kehadiran', startX[2] + 10, yPos);
 
-    yPos += 15;
+      yPos += 15;
 
-    // ===== KOLOM 1: ITEM 1 - BIRU =====
-    doc.setFillColor(173, 216, 230); // Light Blue
-    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 139);
-    doc.text('BIRU', startX[0] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const biru1 = doc.splitTextToSize('Scan MASUK dan PULANG keduanya tercatat', colWidth - 20);
-    doc.text(biru1, startX[0] + 10, yPos + 28);
-
-    // ===== KOLOM 2: ITEM 1 - HIJAU =====
-    doc.setFillColor(144, 238, 144); // Light Green
-    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(0, 100, 0);
-    doc.text('HIJAU', startX[1] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const hijau1 = doc.splitTextToSize('Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', colWidth - 20);
-    doc.text(hijau1, startX[1] + 10, yPos + 28);
-
-    // ===== KOLOM 3: ITEM 1 - H =====
-    doc.setFillColor(144, 238, 144); // Light Green
-    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(0, 100, 0);
-    doc.text('H = HADIR', startX[2] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const h1 = doc.splitTextToSize('Karyawan hadir (ada scan masuk)', colWidth - 20);
-    doc.text(h1, startX[2] + 10, yPos + 28);
-
-    yPos += 60;
-
-    // ===== KOLOM 1: ITEM 2 - KUNING =====
-    doc.setFillColor(255, 255, 153); // Light Yellow
-    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(184, 134, 11);
-    doc.text('KUNING', startX[0] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const kuning1 = doc.splitTextToSize('Hanya scan MASUK saja atau PULANG saja', colWidth - 20);
-    doc.text(kuning1, startX[0] + 10, yPos + 28);
-
-    // ===== KOLOM 2: ITEM 2 - KUNING =====
-    doc.setFillColor(255, 255, 153);
-    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(184, 134, 11);
-    doc.text('KUNING', startX[1] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const kuning2 = doc.splitTextToSize('Datang SETELAH jadwal (Terlambat)', colWidth - 20);
-    doc.text(kuning2, startX[1] + 10, yPos + 28);
-
-    // ===== KOLOM 3: ITEM 2 - T =====
-    doc.setFillColor(255, 255, 153);
-    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(184, 134, 11);
-    doc.text('T = TERLAMBAT', startX[2] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const t1 = doc.splitTextToSize('Hadir tapi datang setelah jadwal', colWidth - 20);
-    doc.text(t1, startX[2] + 10, yPos + 28);
-
-    yPos += 60;
-
-    // ===== KOLOM 1: ITEM 3 - MERAH =====
-    doc.setFillColor(255, 179, 179); // Light Red - sesuai dengan tabel
-    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(139, 0, 0);
-    doc.text('MERAH', startX[0] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const merah1 = doc.splitTextToSize('Tidak ada scan MASUK maupun PULANG (Alpha)', colWidth - 20);
-    doc.text(merah1, startX[0] + 10, yPos + 28);
-
-    // ===== KOLOM 2: ITEM 3 - MERAH =====
-    doc.setFillColor(255, 179, 179);
-    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(139, 0, 0);
-    doc.text('MERAH', startX[1] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const merah2 = doc.splitTextToSize('Tidak scan sama sekali (Alpha)', colWidth - 20);
-    doc.text(merah2, startX[1] + 10, yPos + 28);
-
-    // ===== KOLOM 3: ITEM 3 - A =====
-    doc.setFillColor(255, 179, 179);
-    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(139, 0, 0);
-    doc.text('A = ALPHA', startX[2] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const a1 = doc.splitTextToSize('Tidak hadir (tidak ada scan)', colWidth - 20);
-    doc.text(a1, startX[2] + 10, yPos + 28);
-
-    yPos += 60;
-
-    // ===== KOLOM 1: ITEM 4 - PUTIH L =====
-    doc.setFillColor(255, 255, 255); // White - sesuai dengan tabel
-    doc.setDrawColor(200, 200, 200); // Border abu-abu agar terlihat
-    doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'FD');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(105, 105, 105);
-    doc.text('PUTIH + L', startX[0] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const putih1 = doc.splitTextToSize('Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', colWidth - 20);
-    doc.text(putih1, startX[0] + 10, yPos + 28);
-
-    // ===== KOLOM 2: ITEM 4 - PUTIH L =====
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'FD');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(105, 105, 105);
-    doc.text('PUTIH + L', startX[1] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const putih2 = doc.splitTextToSize('Hari LIBUR (tidak perlu scan)', colWidth - 20);
-    doc.text(putih2, startX[1] + 10, yPos + 28);
-
-    // ===== KOLOM 3: ITEM 4 - L =====
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'FD');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(105, 105, 105);
-    doc.text('L = LIBUR', startX[2] + 10, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    const l1 = doc.splitTextToSize('Hari libur (Jumat/OFF)', colWidth - 20);
-    doc.text(l1, startX[2] + 10, yPos + 28);
-
-    yPos += 60;
-
-    // Catatan Tambahan
-    doc.setFillColor(255, 248, 220); // Light Yellow Background
-    doc.roundedRect(40, yPos, pageWidth - 80, 60, 5, 5, 'F');
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('CATATAN PENTING:', 50, yPos + 15);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(8);
-    const catatan = [
-      '• Tabel 1 menampilkan data mentah dari mesin fingerprint tanpa evaluasi.',
-      '• Tabel 2 mengevaluasi kedisiplinan waktu berdasarkan jadwal mengajar.',
-      '• Tabel 3 mengevaluasi kehadiran secara umum (hadir/tidak hadir).',
-    ];
-    let catatanY = yPos + 30;
-    catatan.forEach(line => {
-      doc.text(line, 50, catatanY);
-      catatanY += 10;
-    });
-
-    // Footer semua halaman
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
+      // ===== KOLOM 1: ITEM 1 - BIRU =====
+      doc.setFillColor(173, 216, 230); // Light Blue
+      doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
       doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Halaman ${i} dari ${totalPages}`, 40, pageHeight - 20);
-      doc.text(
-        'Generated by Matsanuba Management Technology',
-        pageWidth - 280,
-        pageHeight - 20
-      );
-    }
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 139);
+      doc.text('BIRU', startX[0] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const biru1 = doc.splitTextToSize('Scan MASUK dan PULANG keduanya tercatat', colWidth - 20);
+      doc.text(biru1, startX[0] + 10, yPos + 28);
 
-    await updateProgressWithDelay(90); // Progress 90%
+      // ===== KOLOM 2: ITEM 1 - HIJAU =====
+      doc.setFillColor(144, 238, 144); // Light Green
+      doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 100, 0);
+      doc.text('HIJAU', startX[1] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const hijau1 = doc.splitTextToSize('Datang SEBELUM jadwal mengajar dimulai (Disiplin Tinggi)', colWidth - 20);
+      doc.text(hijau1, startX[1] + 10, yPos + 28);
 
-    const timestamp = new Date().toISOString().split('T')[0];
-    doc.save(`laporan_lengkap_absensi_${timestamp}.pdf`);
-    
-    await updateProgressWithDelay(100); // Download selesai
-    setDownloadCompleted(true); // Set status completed - tetap tampil sampai refresh
+      // ===== KOLOM 3: ITEM 1 - H =====
+      doc.setFillColor(144, 238, 144); // Light Green
+      doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 100, 0);
+      doc.text('H = HADIR', startX[2] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const h1 = doc.splitTextToSize('Karyawan hadir (ada scan masuk)', colWidth - 20);
+      doc.text(h1, startX[2] + 10, yPos + 28);
+
+      yPos += 60;
+
+      // ===== KOLOM 1: ITEM 2 - KUNING =====
+      doc.setFillColor(255, 255, 153); // Light Yellow
+      doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(184, 134, 11);
+      doc.text('KUNING', startX[0] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const kuning1 = doc.splitTextToSize('Hanya scan MASUK saja atau PULANG saja', colWidth - 20);
+      doc.text(kuning1, startX[0] + 10, yPos + 28);
+
+      // ===== KOLOM 2: ITEM 2 - KUNING =====
+      doc.setFillColor(255, 255, 153);
+      doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(184, 134, 11);
+      doc.text('KUNING', startX[1] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const kuning2 = doc.splitTextToSize('Datang SETELAH jadwal (Terlambat)', colWidth - 20);
+      doc.text(kuning2, startX[1] + 10, yPos + 28);
+
+      // ===== KOLOM 3: ITEM 2 - T =====
+      doc.setFillColor(255, 255, 153);
+      doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(184, 134, 11);
+      doc.text('T = TERLAMBAT', startX[2] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const t1 = doc.splitTextToSize('Hadir tapi datang setelah jadwal', colWidth - 20);
+      doc.text(t1, startX[2] + 10, yPos + 28);
+
+      yPos += 60;
+
+      // ===== KOLOM 1: ITEM 3 - MERAH =====
+      doc.setFillColor(255, 179, 179); // Light Red - sesuai dengan tabel
+      doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(139, 0, 0);
+      doc.text('MERAH', startX[0] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const merah1 = doc.splitTextToSize('Tidak ada scan MASUK maupun PULANG (Alpha)', colWidth - 20);
+      doc.text(merah1, startX[0] + 10, yPos + 28);
+
+      // ===== KOLOM 2: ITEM 3 - MERAH =====
+      doc.setFillColor(255, 179, 179);
+      doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(139, 0, 0);
+      doc.text('MERAH', startX[1] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const merah2 = doc.splitTextToSize('Tidak scan sama sekali (Alpha)', colWidth - 20);
+      doc.text(merah2, startX[1] + 10, yPos + 28);
+
+      // ===== KOLOM 3: ITEM 3 - A =====
+      doc.setFillColor(255, 179, 179);
+      doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(139, 0, 0);
+      doc.text('A = ALPHA', startX[2] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const a1 = doc.splitTextToSize('Tidak hadir (tidak ada scan)', colWidth - 20);
+      doc.text(a1, startX[2] + 10, yPos + 28);
+
+      yPos += 60;
+
+      // ===== KOLOM 1: ITEM 4 - PUTIH L =====
+      doc.setFillColor(255, 255, 255); // White - sesuai dengan tabel
+      doc.setDrawColor(200, 200, 200); // Border abu-abu agar terlihat
+      doc.roundedRect(startX[0], yPos, colWidth, 50, 3, 3, 'FD');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(105, 105, 105);
+      doc.text('PUTIH + L', startX[0] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const putih1 = doc.splitTextToSize('Hari LIBUR atau tidak ada jadwal (Jumat/OFF)', colWidth - 20);
+      doc.text(putih1, startX[0] + 10, yPos + 28);
+
+      // ===== KOLOM 2: ITEM 4 - PUTIH L =====
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(startX[1], yPos, colWidth, 50, 3, 3, 'FD');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(105, 105, 105);
+      doc.text('PUTIH + L', startX[1] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const putih2 = doc.splitTextToSize('Hari LIBUR (tidak perlu scan)', colWidth - 20);
+      doc.text(putih2, startX[1] + 10, yPos + 28);
+
+      // ===== KOLOM 3: ITEM 4 - L =====
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(startX[2], yPos, colWidth, 50, 3, 3, 'FD');
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(105, 105, 105);
+      doc.text('L = LIBUR', startX[2] + 10, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const l1 = doc.splitTextToSize('Hari libur (Jumat/OFF)', colWidth - 20);
+      doc.text(l1, startX[2] + 10, yPos + 28);
+
+      yPos += 60;
+
+      // Catatan Tambahan
+      doc.setFillColor(255, 248, 220); // Light Yellow Background
+      doc.roundedRect(40, yPos, pageWidth - 80, 60, 5, 5, 'F');
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('CATATAN PENTING:', 50, yPos + 15);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(8);
+      const catatan = [
+        '• Tabel 1 menampilkan data mentah dari mesin fingerprint tanpa evaluasi.',
+        '• Tabel 2 mengevaluasi kedisiplinan waktu berdasarkan jadwal mengajar.',
+        '• Tabel 3 mengevaluasi kehadiran secara umum (hadir/tidak hadir).',
+      ];
+      let catatanY = yPos + 30;
+      catatan.forEach(line => {
+        doc.text(line, 50, catatanY);
+        catatanY += 10;
+      });
+
+      // Footer semua halaman
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Halaman ${i} dari ${totalPages}`, 40, pageHeight - 20);
+        doc.text(
+          'Generated by Matsanuba Management Technology',
+          pageWidth - 280,
+          pageHeight - 20
+        );
+      }
+
+      await updateProgressWithDelay(90); // Progress 90%
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      doc.save(`laporan_lengkap_absensi_${timestamp}.pdf`);
+
+      await updateProgressWithDelay(100); // Download selesai
+      setDownloadCompleted(true); // Set status completed - tetap tampil sampai refresh
     } catch (error) {
       console.error('Error generating PDF:', error);
       setDownloadProgress(0); // Reset langsung saat error
@@ -2967,36 +3063,55 @@ const AttendanceRecapSystem = () => {
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
 
-    doc.setFillColor(230, 230, 240);
-    doc.roundedRect(40, yPos, (pageWidth - 100) / 2, 60, 5, 5, 'F');
-    doc.roundedRect(
-      40 + (pageWidth - 100) / 2 + 20,
-      yPos,
-      (pageWidth - 100) / 2,
-      60,
-      5,
-      5,
-      'F'
-    );
-
-    doc.setFont(undefined, 'normal');
-    doc.text('Total Karyawan', 60, yPos + 25);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(18);
-    doc.text(`${summaryData.totalKaryawan} orang`, 60, yPos + 45);
-
+    // Total Karyawan dan Hari Kerja
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
-    doc.text('Total Hari Kerja', 60 + (pageWidth - 100) / 2 + 20, yPos + 25);
+
+    // Kita punya 3 box sekarang: Total Karyawan | Hari Kerja | Total Hari Kerja G&K
+    const infoBoxWidth = (pageWidth - 100) / 3;
+    const infoY = yPos;
+    const infoHeight = 70;
+
+    // Box 1: Total Karyawan
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(40, infoY, infoBoxWidth, infoHeight, 5, 5, 'F');
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Total Karyawan', 50, infoY + 20);
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(18);
+    doc.setFontSize(16);
+    doc.text(`${summaryData.totalKaryawan} orang`, 50, infoY + 45);
+
+    // Box 2: Hari Kerja (New)
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(40 + infoBoxWidth + 10, infoY, infoBoxWidth, infoHeight, 5, 5, 'F');
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Hari Kerja', 50 + infoBoxWidth + 10, infoY + 20);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(16);
+    doc.text(`${summaryData.effectiveHariKerja || 0} hari`, 50 + infoBoxWidth + 10, infoY + 45);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.text('(selain libur)', 50 + infoBoxWidth + 10, infoY + 60);
+
+    // Box 3: Total Hari Kerja G&K
+    doc.setFillColor(230, 230, 240);
+    doc.roundedRect(40 + 2 * (infoBoxWidth + 10), infoY, infoBoxWidth, infoHeight, 5, 5, 'F');
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Total Hari Kerja G&K', 50 + 2 * (infoBoxWidth + 10), infoY + 20);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(16);
     doc.text(
       `${summaryData.totalHariKerja} hari`,
-      60 + (pageWidth - 100) / 2 + 20,
-      yPos + 45
+      50 + 2 * (infoBoxWidth + 10),
+      infoY + 45
     );
 
-    yPos += 80;
+    yPos += 90;
+
+
 
     // Rincian Kehadiran
     doc.setFontSize(14);
@@ -3543,9 +3658,9 @@ const AttendanceRecapSystem = () => {
       'purple': 'bg-purple-600 hover:bg-purple-700 text-white',
       'transparent': 'bg-white bg-opacity-20 hover:bg-opacity-30 text-white border border-white border-opacity-30',
     };
-    
+
     const baseClass = colorMap[colorClass] || colorMap['indigo'];
-    
+
     return (
       <div className="flex flex-wrap gap-2 justify-start md:justify-end">
         {buttons.map((btn, idx) => (
@@ -3596,16 +3711,17 @@ const AttendanceRecapSystem = () => {
           2. Total Guru
           3. Hari Kerja
         */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           {/* KOLOM 1: Periode & Status */}
-          <div className="bg-white bg-opacity-20 rounded-lg p-5 flex flex-col justify-center">
-            <p className="text-lg font-semibold mb-1 opacity-90">
-              Periode: {summaryData.periode}
+          <div className="bg-white bg-opacity-20 rounded-lg p-5 flex flex-col justify-center relative overflow-hidden">
+            <p className="text-sm font-semibold mb-1 opacity-90">
+              Periode & Predikat
             </p>
-            <p className="text-4xl font-bold my-2">{summaryData.predikat}</p>
-            <p className="text-lg opacity-90">
-              Tingkat Kehadiran: {summaryData.persentaseKehadiran}%
-            </p>
+            <p className="text-xs opacity-80 mb-2">{summaryData.periode}</p>
+            <p className="text-2xl font-bold">{summaryData.predikat}</p>
+            <div className="text-sm mt-1 opacity-90">
+              {summaryData.persentaseKehadiran}% Kehadiran
+            </div>
           </div>
 
           {/* KOLOM 2: Total Guru */}
@@ -3616,10 +3732,21 @@ const AttendanceRecapSystem = () => {
             </p>
           </div>
 
-          {/* KOLOM 3: Hari Kerja */}
+          {/* KOLOM 3: Hari Kerja (Baru) */}
           <div className="bg-white bg-opacity-20 rounded-lg p-5 flex flex-col justify-center">
             <p className="text-sm opacity-90 mb-1">
-              Hari Kerja Guru & Karyawan
+              Hari Kerja
+            </p>
+            <p className="text-3xl font-bold">
+              {summaryData.effectiveHariKerja || 0} hari
+            </p>
+            <p className="text-xs opacity-70 italic mt-1">(selain hari libur)</p>
+          </div>
+
+          {/* KOLOM 4: Total Hari Kerja G&K */}
+          <div className="bg-white bg-opacity-20 rounded-lg p-5 flex flex-col justify-center">
+            <p className="text-sm opacity-90 mb-1">
+              Total Hari Kerja G&K
             </p>
             <p className="text-3xl font-bold">
               {summaryData.totalHariKerja} hari
@@ -3821,9 +3948,9 @@ const AttendanceRecapSystem = () => {
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             {/* Kiri - Logo & Judul */}
             <div className="md:col-span-1 flex items-center justify-center md:justify-start gap-4">
-              <img 
-                src="/logo.png" 
-                alt="Logo Matsanuba" 
+              <img
+                src="/logo.png"
+                alt="Logo Matsanuba"
                 className="h-14 w-auto object-contain"
               />
               <div>
@@ -3835,7 +3962,7 @@ const AttendanceRecapSystem = () => {
                 </h2>
               </div>
             </div>
-            
+
             {/* Tengah - Info Sekolah */}
             {licenseInfo && (
               <div className="md:col-span-1 flex items-center justify-center">
@@ -3846,7 +3973,7 @@ const AttendanceRecapSystem = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Kanan - Powered By & Logout */}
             <div className="md:col-span-1 flex flex-col items-center justify-center gap-2">
               <div className="text-center text-xs text-gray-500">
@@ -3999,34 +4126,100 @@ const AttendanceRecapSystem = () => {
                 </div>
 
                 {/* Kolom 3: Input Hari Libur */}
+                {/* Kolom 3: Input Hari Libur */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                    🎉 Libur Khusus
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={newHoliday}
-                      onChange={(e) => setNewHoliday(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="Pilih tanggal"
-                    />
-                    <button
-                      onClick={addHoliday}
-                      className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
-                      title="Tambah Hari Libur"
-                    >
-                      <Plus size={20} />
-                    </button>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center gap-1">
+                      🎉 Libur Khusus
+                    </label>
+                    <div className="flex bg-gray-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setHolidayInputMode('single')}
+                        className={`px-2 py-0.5 text-xs rounded-md transition-all ${holidayInputMode === 'single'
+                          ? 'bg-white text-indigo-600 shadow-sm font-medium'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                      >
+                        Harian
+                      </button>
+                      <button
+                        onClick={() => setHolidayInputMode('range')}
+                        className={`px-2 py-0.5 text-xs rounded-md transition-all ${holidayInputMode === 'range'
+                          ? 'bg-white text-indigo-600 shadow-sm font-medium'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                      >
+                        Panjang
+                      </button>
+                    </div>
                   </div>
+
+                  {holidayInputMode === 'single' ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        value={newHoliday}
+                        onChange={(e) => setNewHoliday(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Pilih tanggal"
+                      />
+                      <button
+                        onClick={addHoliday}
+                        className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
+                        title="Tambah Hari Libur"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1">
+                          <input
+                            type="date"
+                            value={holidayStartDate}
+                            onChange={(e) => setHolidayStartDate(e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="Mulai"
+                          />
+                        </div>
+                        <span className="text-gray-400">-</span>
+                        <div className="flex-1">
+                          <input
+                            type="date"
+                            value={holidayEndDate}
+                            onChange={(e) => setHolidayEndDate(e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="Selesai"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={addHolidayRange}
+                        className="w-full bg-indigo-600 text-white py-1.5 rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                      >
+                        <Plus size={14} /> Tambah Rentang Libur
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Kolom 4: List Libur */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Daftar Libur ({holidays.length})
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
+                    <span>Daftar Libur ({holidays.length})</span>
+                    {holidays.length > 0 && (
+                      <button
+                        onClick={clearAllHolidays}
+                        className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                        title="Hapus semua hari libur"
+                      >
+                        Hapus Semua
+                      </button>
+                    )}
                   </label>
                   <div className="bg-white p-2 rounded-lg border border-gray-200 h-[42px] overflow-x-auto overflow-y-hidden whitespace-nowrap flex items-center">
+
                     {holidays.length > 0 ? (
                       <div className="flex gap-2">
                         {holidays.map((date, idx) => (
@@ -4082,7 +4275,7 @@ const AttendanceRecapSystem = () => {
                     <span className="text-sm font-medium text-gray-700">{downloadProgress}%</span>
                   </div>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full bg-[#059669] transition-all duration-400`}
                       style={{ width: `${downloadProgress}%` }}
                     />
@@ -4172,7 +4365,7 @@ const AttendanceRecapSystem = () => {
                     <p className="text-indigo-700">Analisis kehadiran dan kedisiplinan per kategori jabatan</p>
                   </div>
                   <div className="order-1 md:order-2 w-full md:w-auto">
-                    <ActionButtonGroup 
+                    <ActionButtonGroup
                       buttons={[
                         { icon: Download, label: 'PDF', title: 'Download PDF', onClick: downloadCategoryAsPdf },
                         { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyCategory },
@@ -4289,7 +4482,7 @@ const AttendanceRecapSystem = () => {
                     <p className="text-amber-700">Ranking berdasarkan disiplin waktu dan ketertiban administrasi</p>
                   </div>
                   <div className="order-1 md:order-2 w-full md:w-auto">
-                    <ActionButtonGroup 
+                    <ActionButtonGroup
                       buttons={[
                         { icon: Download, label: 'PDF', title: 'Download PDF', onClick: downloadRankingAsPdf },
                         { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyRanking },
@@ -4466,7 +4659,7 @@ const AttendanceRecapSystem = () => {
                       📊 Panduan 3 Tabel Rekap
                     </h4>
                     <div className="order-1 md:order-2 w-full md:w-auto">
-                      <ActionButtonGroup 
+                      <ActionButtonGroup
                         buttons={[
                           { icon: FileText, label: 'JPG', title: 'Copy JPG', onClick: handleCopyPanduan },
                           { icon: Download, label: 'JPG', title: 'Download JPG', onClick: handleDownloadPanduan },
@@ -4832,7 +5025,7 @@ const AttendanceRecapSystem = () => {
                           <p className="text-sm text-blue-600">Data mentah dari mesin fingerprint</p>
                         </div>
                         <div className="order-1 md:order-2 w-full md:w-auto">
-                          <ActionButtonGroup 
+                          <ActionButtonGroup
                             buttons={[
                               { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel1') },
                               { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel1', 'rekap_mesin') },
@@ -5058,7 +5251,7 @@ const AttendanceRecapSystem = () => {
                           <p className="text-sm text-green-600">Evaluasi ketepatan waktu kehadiran</p>
                         </div>
                         <div className="order-1 md:order-2 w-full md:w-auto">
-                          <ActionButtonGroup 
+                          <ActionButtonGroup
                             buttons={[
                               { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel2') },
                               { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel2', 'kedisiplinan_waktu') },
@@ -5291,7 +5484,7 @@ const AttendanceRecapSystem = () => {
                           <p className="text-sm text-purple-600">Status kehadiran berdasarkan jadwal</p>
                         </div>
                         <div className="order-1 md:order-2 w-full md:w-auto">
-                          <ActionButtonGroup 
+                          <ActionButtonGroup
                             buttons={[
                               { icon: FileText, label: 'Excel', title: 'Copy Excel', onClick: () => copyTableToClipboard('tabel3') },
                               { icon: Download, label: 'Excel', title: 'Download Excel', onClick: () => downloadTableAsExcel('tabel3', 'evaluasi_kehadiran') },
