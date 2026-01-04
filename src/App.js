@@ -79,6 +79,24 @@ const AttendanceRecapSystem = () => {
       // Decode stored license
       const decodedLicense = JSON.parse(atob(storedLicense));
 
+      // 🔓 BYPASS KHUSUS: MTs. An-Nur Bululawang
+      const isAnnurBypass = decodedLicense.schoolName === 'MTs. An-Nur Bululawang' &&
+        (decodedLicense.licenseKey === 'ANNUR-2025' ||
+          decodedLicense.licenseKey === 'MTS. AN-NUR BULULAWANG' ||
+          decodedLicense.licenseKey === 'MTs. An-Nur Bululawang');
+
+      if (isAnnurBypass) {
+        setIsActivated(true);
+        setLicenseInfo({
+          schoolName: decodedLicense.schoolName,
+          expiresAt: '2099-12-31',
+          licenseKey: decodedLicense.licenseKey,
+          daysRemaining: 9999
+        });
+        setIsValidatingLicense(false);
+        return;
+      }
+
       // Get license key dari stored data
       const licenseKey = decodedLicense.licenseKey;
 
@@ -152,6 +170,39 @@ const AttendanceRecapSystem = () => {
   // Ref untuk capture kategori sebagai gambar
   const categoryRef = React.useRef(null);
 
+  // Helper untuk format nama file berdasarkan bulan & tahun
+  const getFormattedFileName = (baseName) => {
+    const monthNames = [
+      'januari', 'februari', 'maret', 'april', 'mei', 'juni',
+      'juli', 'agustus', 'september', 'oktober', 'november', 'desember'
+    ];
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const startMonth = start.getMonth();
+    const endMonth = end.getMonth();
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+
+    let fileNameParts = "";
+    if (startYear === endYear) {
+      if (startMonth === endMonth) {
+        fileNameParts = `${monthNames[startMonth]}_${startYear}`;
+      } else {
+        const selectedMonths = [];
+        for (let m = startMonth; m <= endMonth; m++) {
+          selectedMonths.push(monthNames[m]);
+        }
+        fileNameParts = `${selectedMonths.join('_')}_${startYear}`;
+      }
+    } else {
+      fileNameParts = `${monthNames[startMonth]}_${startYear}_ke_${monthNames[endMonth]}_${endYear}`;
+    }
+
+    return `${baseName}_${fileNameParts}`;
+  };
+
   // Download sebagai JPG
   const handleDownloadSummaryJPG = async () => {
     if (summaryRef.current) {
@@ -162,7 +213,7 @@ const AttendanceRecapSystem = () => {
       const image = canvas.toDataURL('image/jpeg', 1.0);
       const link = document.createElement('a');
       link.href = image;
-      link.download = `kesimpulan-absensi-${summaryData.periode}.jpg`;
+      link.download = `${getFormattedFileName('kesimpulan_absensi')}.jpg`;
       link.click();
     }
   };
@@ -226,7 +277,7 @@ const AttendanceRecapSystem = () => {
       const image = canvas.toDataURL('image/jpeg', 1.0);
       const link = document.createElement('a');
       link.href = image;
-      link.download = `peringkat-karyawan-${summaryData?.periode || 'rekap'}.jpg`;
+      link.download = `${getFormattedFileName('peringkat_karyawan')}.jpg`;
       link.click();
     }
   };
@@ -258,7 +309,7 @@ const AttendanceRecapSystem = () => {
       const image = canvas.toDataURL('image/jpeg', 1.0);
       const link = document.createElement('a');
       link.href = image;
-      link.download = `evaluasi-kategori-${summaryData?.periode || 'rekap'}.jpg`;
+      link.download = `${getFormattedFileName('evaluasi_kategori')}.jpg`;
       link.click();
     }
   };
@@ -2816,10 +2867,7 @@ const AttendanceRecapSystem = () => {
         );
       }
 
-      await updateProgressWithDelay(90); // Progress 90%
-
-      const timestamp = new Date().toISOString().split('T')[0];
-      doc.save(`laporan_lengkap_absensi_${timestamp}.pdf`);
+      doc.save(`${getFormattedFileName('laporan_lengkap_absensi')}.pdf`);
 
       await updateProgressWithDelay(100); // Download selesai
       setDownloadCompleted(true); // Set status completed - tetap tampil sampai refresh

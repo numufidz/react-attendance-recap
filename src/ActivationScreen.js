@@ -17,6 +17,40 @@ export default function ActivationScreen({ onActivationSuccess }) {
     setError('');
     setSuccess('');
 
+    // 🔓 BYPASS KHUSUS: MTs. An-Nur Bululawang
+    const isAnnurBypass =
+      schoolName.trim() === 'MTs. An-Nur Bululawang' &&
+      licenseKey.trim() === 'MTs. An-Nur Bululawang' &&
+      schoolEmail.trim() === 'MTs. An-Nur Bululawang';
+
+    if (isAnnurBypass) {
+      try {
+        setSuccess('✅ Bypass Terdeteksi: Sekolah Terverifikasi khusus. Mengaktifkan...');
+
+        const mockData = {
+          token: 'bypass-token-' + btoa('MTs. An-Nur Bululawang'),
+          schoolName: 'MTs. An-Nur Bululawang',
+          licenseKey: 'MTs. An-Nur Bululawang',
+          expiresAt: '2099-12-31'
+        };
+
+        // Simpan token ke localStorage (encrypted dengan base64)
+        localStorage.setItem('licenseToken', btoa(JSON.stringify({
+          ...mockData,
+          activatedAt: new Date().toISOString()
+        })));
+
+        setTimeout(() => {
+          onActivationSuccess(mockData);
+        }, 1500);
+        return;
+      } catch (err) {
+        console.error('Bypass error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
       const response = await fetch('/.netlify/functions/send-otp', {
         method: 'POST',
@@ -80,7 +114,7 @@ export default function ActivationScreen({ onActivationSuccess }) {
       // Decode JWT untuk ekstrak licenseKey dari claim
       const tokenParts = data.token.split('.');
       let licenseKeyFromJWT = null;
-      
+
       if (tokenParts.length === 3) {
         try {
           const decodedPayload = JSON.parse(atob(tokenParts[1]));
@@ -101,7 +135,7 @@ export default function ActivationScreen({ onActivationSuccess }) {
       })));
 
       setSuccess('✅ Aktivasi berhasil! Aplikasi sedang dimuat...');
-      
+
       // Tunggu 1 detik sebelum callback
       setTimeout(() => {
         onActivationSuccess({
@@ -160,11 +194,11 @@ export default function ActivationScreen({ onActivationSuccess }) {
               </label>
               <input
                 type="text"
-                placeholder="XXXX-XXXX-XXXX-XXXX"
+                placeholder="Masukkan Kode Lisensi"
                 value={licenseKey}
-                onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+                onChange={(e) => setLicenseKey(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed font-mono"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Format: XXXX-XXXX-XXXX-XXXX (sesuai dengan email aktivasi Anda)
