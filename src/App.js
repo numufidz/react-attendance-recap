@@ -1275,6 +1275,10 @@ const AttendanceRecapSystem = () => {
       const catEval = calculateCategoryEvaluation(recap, dateRange);
       setCategoryEvaluation(catEval);
 
+      if (recapData) {
+        alert('Data berhasil direkap ulang dengan pembaruan hari libur terbaru!');
+      }
+
     } catch (error) {
       alert('Error: ' + error.message);
     }
@@ -2870,7 +2874,13 @@ const AttendanceRecapSystem = () => {
       doc.save(`${getFormattedFileName('laporan_lengkap_absensi')}.pdf`);
 
       await updateProgressWithDelay(100); // Download selesai
-      setDownloadCompleted(true); // Set status completed - tetap tampil sampai refresh
+      setDownloadCompleted(true); // Set status completed
+      
+      // Reset status setelah 3 detik agar tombol kembali aktif
+      setTimeout(() => {
+        setDownloadProgress(0);
+        setDownloadCompleted(false);
+      }, 3000);
     } catch (error) {
       console.error('Error generating PDF:', error);
       setDownloadProgress(0); // Reset langsung saat error
