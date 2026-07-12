@@ -207,10 +207,10 @@ const AttendanceRecapSystem = () => {
   const handleDownloadSummaryJPG = async () => {
     if (summaryRef.current) {
       const canvas = await html2canvas(summaryRef.current, {
-        scale: 2,
+        scale: 1.5,
         backgroundColor: null,
       });
-      const image = canvas.toDataURL('image/jpeg', 1.0);
+      const image = canvas.toDataURL('image/jpeg', 0.8);
       const link = document.createElement('a');
       link.href = image;
       link.download = `${getFormattedFileName('kesimpulan_absensi')}.jpg`;
@@ -239,10 +239,10 @@ const AttendanceRecapSystem = () => {
   const handleDownloadPanduan = async () => {
     if (panduanRef.current) {
       const canvas = await html2canvas(panduanRef.current, {
-        scale: 2,
+        scale: 1.5,
         backgroundColor: '#ffffff',
       });
-      const image = canvas.toDataURL('image/jpeg', 1.0);
+      const image = canvas.toDataURL('image/jpeg', 0.8);
       const link = document.createElement('a');
       link.href = image;
       link.download = 'panduan-rekap.jpg';
@@ -271,10 +271,10 @@ const AttendanceRecapSystem = () => {
   const handleDownloadRankingJPG = async () => {
     if (rankingRef.current) {
       const canvas = await html2canvas(rankingRef.current, {
-        scale: 2,
+        scale: 1.5,
         backgroundColor: null,
       });
-      const image = canvas.toDataURL('image/jpeg', 1.0);
+      const image = canvas.toDataURL('image/jpeg', 0.8);
       const link = document.createElement('a');
       link.href = image;
       link.download = `${getFormattedFileName('peringkat_karyawan')}.jpg`;
@@ -303,10 +303,10 @@ const AttendanceRecapSystem = () => {
   const handleDownloadCategoryJPG = async () => {
     if (categoryRef.current) {
       const canvas = await html2canvas(categoryRef.current, {
-        scale: 2,
+        scale: 1.5,
         backgroundColor: null,
       });
-      const image = canvas.toDataURL('image/jpeg', 1.0);
+      const image = canvas.toDataURL('image/jpeg', 0.8);
       const link = document.createElement('a');
       link.href = image;
       link.download = `${getFormattedFileName('evaluasi_kategori')}.jpg`;
@@ -2477,14 +2477,14 @@ const AttendanceRecapSystem = () => {
         let canvas;
         try {
           canvas = await html2canvas(clone, {
-            scale: 1.5, // Skala tabel tetap
+            scale: 1, // Skala tabel - diturunkan dari 1.5 ke 1 untuk mengurangi ukuran PDF
             backgroundColor: '#ffffff',
             logging: false,
           });
         } finally {
           document.body.removeChild(container);
         }
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgData = canvas.toDataURL('image/jpeg', 0.65); // Quality diturunkan dari 0.85 ke 0.65
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
 
