@@ -2630,7 +2630,121 @@ const AttendanceRecapSystem = () => {
         doc.text(note2, startX[0], yPos);
       }
 
-      // ============= HALAMAN 3-5: TABEL 1, 2, 3 =============
+      // ============= HALAMAN 3: TABEL 4 - GURU TANPA KETIDAKHADIRAN =============
+      if (rankingData?.guruRanking?.guruTanpaKetidakhadiran?.length > 0) {
+        doc.addPage();
+        let yPos4 = 40;
+
+        // Header — PERSIS sama dengan halaman PERINGKAT GURU & KARYAWAN
+        doc.setFillColor(109, 40, 217); // Violet (sama konsepnya dengan indigo di halaman peringkat)
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.text('PERINGKAT GURU TANPA KETIDAKHADIRAN', 40, 25);
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Periode: ${summaryData.periode}`, 40, 55);
+
+        yPos4 = 80;
+
+        // Lebar kolom penuh (1 kolom saja, berbeda dari 3 kolom di halaman peringkat)
+        const tabel4Width = pageWidth - 80;
+        const tabel4X = 40;
+
+        // Header pill — sama style dengan pill hijau/biru/merah di halaman peringkat
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(109, 40, 217); // Violet
+        doc.roundedRect(tabel4X, yPos4, tabel4Width, 25, 5, 5, 'F');
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)', tabel4X + 10, yPos4 + 17);
+
+        yPos4 += 50;
+
+        // Data rows — PERSIS sama struktur dengan halaman peringkat
+        const top10Guru = rankingData.guruRanking.guruTanpaKetidakhadiran.slice(0, 10);
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(8);
+        const rowHeight4 = 30;
+        // Lebar kolom untuk nilai di kanan (JJM, S, I, A, %)
+        const valColW = 30;
+        const pctColW = 40;
+        const nameColW = tabel4Width - 24 - 110 - (valColW * 3) - pctColW; // sisanya untuk nama
+
+        for (let i = 0; i < top10Guru.length; i++) {
+          const guru = top10Guru[i];
+          // Background alternating — sama persis dengan halaman peringkat
+          doc.setFillColor(i % 2 === 0 ? 237 : 255, i % 2 === 0 ? 233 : 255, i % 2 === 0 ? 254 : 255);
+          doc.rect(tabel4X, yPos4, tabel4Width, rowHeight4, 'F');
+
+          // Nomor urut — bold violet, sama seperti halaman peringkat
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(109, 40, 217);
+          doc.text(`${i + 1}.`, tabel4X + 5, yPos4 + 17);
+
+          // Nama guru
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(0, 0, 0);
+          const maxNameLen = Math.floor(nameColW / 6);
+          const displayNama = guru.nama.length > maxNameLen
+            ? guru.nama.substring(0, maxNameLen - 3) + '...'
+            : guru.nama;
+          doc.text(displayNama, tabel4X + 24, yPos4 + 12);
+
+          // Jabatan (dari field mapel) — kecil abu-abu, sama seperti jabatan di halaman peringkat
+          doc.setFontSize(7.5);
+          doc.setTextColor(100, 100, 100);
+          const maxMapelLen = Math.floor((nameColW + 80) / 5.5);
+          const displayJabatan = guru.mapel.length > maxMapelLen
+            ? guru.mapel.substring(0, maxMapelLen - 3) + '...'
+            : guru.mapel;
+          doc.text(displayJabatan, tabel4X + 24, yPos4 + 21);
+
+          // JJM — label kecil + nilai bold violet
+          const jjmX = tabel4X + tabel4Width - pctColW - (valColW * 3) - 50;
+          doc.setTextColor(80, 80, 80);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text('JJM', jjmX - 20, yPos4 + 12);
+          doc.setTextColor(109, 40, 217);
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(10);
+          doc.text(`${guru.jjm}`, jjmX, yPos4 + 17);
+
+          // S: 0  I: 0  A: 0 — dalam satu baris, rata tengah vertikal
+          const siaX = tabel4X + tabel4Width - pctColW - (valColW * 3) + 5;
+          doc.setTextColor(80, 80, 80);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text(`S:${guru.totalS}  I:${guru.totalI}  A:${guru.totalA}`, siaX, yPos4 + 17);
+
+          // Persentase — bold hitam
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(11);
+          doc.setFont(undefined, 'bold');
+          doc.text('100%', tabel4X + tabel4Width - pctColW + 5, yPos4 + 17);
+
+          yPos4 += rowHeight4;
+        }
+
+
+        // Keterangan — PERSIS sama format dengan halaman peringkat
+        yPos4 += 10;
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Keterangan: JJM = Jumlah Jam Mengajar | S = Sakit | I = Izin | A = Alfa | % = Persentase Kehadiran', tabel4X, yPos4);
+        yPos4 += 10;
+        doc.text('Peringkat 1 = Guru tanpa ketidakhadiran (S/I/A = 0) dengan JJM terbanyak. Semua guru di daftar ini memiliki kehadiran 100%.', tabel4X, yPos4);
+      }
+
+      // ============= HALAMAN 4-6: TABEL 1, 2, 3 =============
       for (let i = 1; i <= 3; i++) {
         doc.addPage();
         const tableId = `tabel${i}`;
@@ -2800,9 +2914,9 @@ const AttendanceRecapSystem = () => {
         }
       }
 
-      // ============= HALAMAN 6: PANDUAN LENGKAP (3 KOLOM) =============
-      doc.addPage();
 
+
+      doc.addPage();
       // Header Halaman Panduan
       doc.setFillColor(79, 70, 229);
       doc.rect(0, 0, pageWidth, 60, 'F');
