@@ -22,6 +22,8 @@ const AttendanceRecapSystem = () => {
   // Data state
   const [attendanceData, setAttendanceData] = useState([]);
   const [scheduleData, setScheduleData] = useState([]);
+  const [guruAbsensiData, setGuruAbsensiData] = useState([]); // Data dari sheet ABSENSI GURU (sheet ke-2)
+  const [isLoadingGuruAbsensi, setIsLoadingGuruAbsensi] = useState(false);
   const [recapData, setRecapData] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [rankingData, setRankingData] = useState(null);
@@ -1023,6 +1025,180 @@ const AttendanceRecapSystem = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  // ============================================================
+  // FASE 1.2 — Parser File Excel ke-3 (Sheet ABSENSI GURU)
+  // ============================================================
+  const processGuruAbsensiFile = (file) => {
+    if (!validateFile(file)) return;
+    setIsLoadingGuruAbsensi(true);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        // Cari sheet bernama 'ABSENSI GURU' dulu, fallback ke sheet index 1
+        const sheetNames = workbook.SheetNames;
+        const absensiGuruSheetName = sheetNames.find(
+          (name) => name.toUpperCase().includes('ABSENSI GURU') || name.toUpperCase().includes('ABSENSI')
+        );
+        let targetSheet;
+        if (absensiGuruSheetName) {
+          targetSheet = workbook.Sheets[absensiGuruSheetName];
+        } else if (sheetNames.length >= 2) {
+          targetSheet = workbook.Sheets[sheetNames[1]]; // fallback sheet index 1
+        } else {
+          targetSheet = workbook.Sheets[sheetNames[0]]; // fallback sheet index 0
+        }
+
+        const jsonData = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: '' });
+        console.log('📊 Raw data ABSENSI GURU (10 baris pertama):', jsonData.slice(0, 10));
+
+        // Temukan baris header dan kolom kunci
+        let namaCol = 1; // Default: kolom B
+        let mapelCol = 2; // Default: kolom C
+        let noCol = 0; // Default: kolom A
+        let jumlahColS = -1;
+        let jumlahColI = -1;
+        let jumlahColA = -1;
+        let jumlahColTgs = -1;
+        let jjmCol = -1;
+        let dataStartRow = 7; // Default: baris ke-8 (index 7)
+
+        // Scan baris header (baris 1-10)
+        for (let i = 0; i < Math.min(12, jsonData.length); i++) {
+          const row = jsonData[i];
+          const rowStr = row.map(c => String(c || '').toLowerCase()).join('|');
+
+          // Cari baris header nama & mapel
+          if (rowStr.includes('nama') && (rowStr.includes('mapel') || rowStr.includes('mata'))) {
+            row.forEach((cell, idx) => {
+              const cellStr = String(cell || '').toLowerCase();
+              if (cellStr.includes('nama') || cellStr.includes('ustad')) namaCol = idx;
+              if (cellStr.includes('mapel') || cellStr.includes('mata pelajaran')) mapelCol = idx;
+              if (cellStr === 'no' || cellStr === 'no.') noCol = idx;
+            });
+          }
+
+          // Cari kolom JUMLAH (cari kata 'JUMLAH')
+          row.forEach((cell, idx) => {
+            const cellStr = String(cell || '').toUpperCase().trim();
+            if (cellStr === 'JUMLAH') {
+              // Biasanya S,I,A,Tgs,TOTAL ada setelah JUMLAH
+              jumlahColS = idx + 1;
+              jumlahColI = idx + 2;
+              jumlahColA = idx + 3;
+              jumlahColTgs = idx + 4;
+            }
+          });
+
+          // Cari kolom BEBAN JAM / JJM
+          row.forEach((cell, idx) => {
+            const cellStr = String(cell || '').toUpperCase().trim();
+            if (cellStr.includes('BEBAN') || cellStr === 'JJM' || cellStr.includes('MINGGU')) {
+              jjmCol = idx;
+            }
+          });
+        }
+
+        // Temukan baris data pertama (No harus angka)
+        for (let i = 5; i < Math.min(15, jsonData.length); i++) {
+          const noVal = String(jsonData[i][noCol] || '').trim();
+          if (noVal && !isNaN(noVal) && parseInt(noVal) > 0) {
+            dataStartRow = i;
+            break;
+          }
+        }
+
+        // Jika JJM masih belum ketemu, scan baris header lebih detail (cari dari kanan)
+        if (jjmCol < 0) {
+          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+            const row = jsonData[i];
+            for (let j = row.length - 1; j >= 0; j--) {
+              const cellStr = String(row[j] || '').toUpperCase().trim();
+              if (cellStr.includes('BEBAN') || cellStr === 'JJM') {
+                jjmCol = j;
+                break;
+              }
+            }
+            if (jjmCol >= 0) break;
+          }
+        }
+
+        // Pure fallback berdasarkan screenshot struktur:
+        // T=19(S), U=20(I), V=21(A), W=22(Tgs), X=23(TOTAL), AH=33(JJM) [0-indexed]
+        if (jumlahColS < 0) {
+          if (jjmCol > 0) {
+            jumlahColTgs = jjmCol - 1;
+            jumlahColA = jjmCol - 2;
+            jumlahColI = jjmCol - 3;
+            jumlahColS = jjmCol - 4;
+          } else {
+            jumlahColS = 19; jumlahColI = 20; jumlahColA = 21; jumlahColTgs = 22;
+            jjmCol = 33;
+          }
+        }
+
+        console.log('📋 Struktur kolom:', { namaCol, mapelCol, jumlahColS, jumlahColI, jumlahColA, jumlahColTgs, jjmCol, dataStartRow });
+
+        // Parse data guru
+        const guruList = [];
+        for (let i = dataStartRow; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          const noVal = String(row[noCol] || '').trim();
+          if (!noVal || isNaN(noVal) || parseInt(noVal) <= 0) continue;
+          const namaVal = String(row[namaCol] || '').trim();
+          if (!namaVal || namaVal.toLowerCase() === 'jumlah' || namaVal.toLowerCase() === 'total') continue;
+
+          const totalS = Number(row[jumlahColS]) || 0;
+          const totalI = Number(row[jumlahColI]) || 0;
+          const totalA = Number(row[jumlahColA]) || 0;
+          const totalTgs = Number(row[jumlahColTgs]) || 0;
+          const jjm = Number(row[jjmCol]) || 0;
+
+          guruList.push({
+            no: parseInt(noVal),
+            nama: namaVal,
+            mapel: String(row[mapelCol] || '').trim(),
+            totalS, totalI, totalA, totalTgs,
+            totalKetidakhadiran: totalS + totalI + totalA,
+            jjm,
+          });
+        }
+
+        if (guruList.length === 0) {
+          throw new Error('Tidak ada data guru yang valid. Pastikan file berisi sheet "ABSENSI GURU" dengan format yang sesuai.');
+        }
+
+        console.log('✅ Data ABSENSI GURU berhasil dimuat:', guruList.length, 'guru');
+        setGuruAbsensiData(guruList);
+      } catch (error) {
+        console.error('Error membaca file ABSENSI GURU:', error);
+        setErrorMessage('Gagal membaca file Absensi Guru: ' + error.message);
+      } finally {
+        setIsLoadingGuruAbsensi(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // ============================================================
+  // FASE 2.1 — Hitung Peringkat Guru berdasarkan Ketidakhadiran & JJM
+  // ============================================================
+  const calculateGuruRanking = (guruList) => {
+    if (!guruList || guruList.length === 0) return null;
+    // Guru Tanpa Ketidakhadiran: S+I+A = 0, sort by JJM desc
+    const guruTanpaKetidakhadiran = guruList
+      .filter(g => g.totalKetidakhadiran === 0)
+      .sort((a, b) => b.jjm - a.jjm || a.nama.localeCompare(b.nama));
+    // Guru Dengan Ketidakhadiran: sort by totalKetidakhadiran asc, lalu JJM desc
+    const guruDenganKetidakhadiran = guruList
+      .filter(g => g.totalKetidakhadiran > 0)
+      .sort((a, b) => a.totalKetidakhadiran - b.totalKetidakhadiran || b.jjm - a.jjm);
+    return { guruTanpaKetidakhadiran, guruDenganKetidakhadiran };
+  };
+
   const getDateLabel = (date) => {
     const months = [
       'Jan',
@@ -1269,7 +1445,9 @@ const AttendanceRecapSystem = () => {
 
       // Calculate ranking with the new data
       const rankings = calculateRankings(recap, dateRange);
-      setRankingData(rankings);
+      // Integrasi peringkat guru dari guruAbsensiData jika tersedia
+      const guruRanking = guruAbsensiData.length > 0 ? calculateGuruRanking(guruAbsensiData) : null;
+      setRankingData({ ...rankings, guruRanking });
 
       // Calculate category evaluation
       const catEval = calculateCategoryEvaluation(recap, dateRange);
@@ -1517,7 +1695,8 @@ const AttendanceRecapSystem = () => {
 
     // Hitung ranking
     const rankings = calculateRankings();
-    setRankingData(rankings);
+    const guruRanking = guruAbsensiData.length > 0 ? calculateGuruRanking(guruAbsensiData) : null;
+    setRankingData({ ...rankings, guruRanking });
   };
 
   const copyTableToClipboard = (tableId) => {
@@ -3552,6 +3731,76 @@ const AttendanceRecapSystem = () => {
           5: { halign: 'center', cellWidth: 40 },
         },
       });
+
+      yPos = doc.lastAutoTable.finalY + 15;
+
+      // Cek halaman baru sebelum tabel 4
+      if (yPos > 680) {
+        doc.addPage();
+        yPos = 40;
+      }
+
+      // ===== TABEL 4: Guru Tanpa Ketidakhadiran (dari guruAbsensiData) =====
+      if (rankingData.guruRanking && rankingData.guruRanking.guruTanpaKetidakhadiran) {
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setFillColor(139, 92, 246); // Ungu
+        doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(
+          '4. 🎓 Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)',
+          60,
+          yPos + 17
+        );
+
+        yPos += 35;
+
+        const table4Data = rankingData.guruRanking.guruTanpaKetidakhadiran.map((guru, idx) => [
+          idx + 1,
+          guru.nama,
+          guru.mapel,
+          guru.jjm,
+          guru.totalS,
+          guru.totalI,
+          guru.totalA,
+          guru.totalKetidakhadiran,
+        ]);
+
+        autoTable(doc, {
+          head: [['Rank', 'Nama Guru', 'Mapel', 'JJM', 'S', 'I', 'A', 'Total Tidak Hadir']],
+          body: table4Data,
+          startY: yPos,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [139, 92, 246],
+            fontStyle: 'bold',
+            fontSize: 8,
+          },
+          styles: { fontSize: 7, cellPadding: 2.5 },
+          columnStyles: {
+            0: { halign: 'center', cellWidth: 20 },
+            1: { cellWidth: 'auto' },
+            2: { cellWidth: 'auto' },
+            3: { halign: 'center', cellWidth: 25 },
+            4: { halign: 'center', cellWidth: 20 },
+            5: { halign: 'center', cellWidth: 20 },
+            6: { halign: 'center', cellWidth: 20 },
+            7: { halign: 'center', cellWidth: 35 },
+          },
+          didDrawRow: (data) => {
+            // Highlight top 3
+            if (data.row.index === 0) {
+              data.row.cells[0].styles = { ...data.row.cells[0].styles, fillColor: [255, 215, 0], textColor: [0,0,0] };
+            }
+          }
+        });
+
+        yPos = doc.lastAutoTable.finalY + 5;
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Peringkat 1 = Guru tanpa ketidakhadiran (S/I/A=0) dengan JJM terbanyak.', 40, yPos + 10);
+      }
     }
 
     doc.save('kesimpulan_profil_absensi.pdf');
@@ -4058,7 +4307,7 @@ const AttendanceRecapSystem = () => {
           </p>
           {errorMessage && <p className="text-red-600 mb-4">{errorMessage}</p>}
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             <div className="border-2 border-dashed border-indigo-300 rounded-xl p-6 relative">
               <label className="cursor-pointer block">
                 <div className="flex flex-col items-center gap-3">
@@ -4148,6 +4397,52 @@ const AttendanceRecapSystem = () => {
                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-green-800 font-medium text-sm">
                     {scheduleData.length} jadwal
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* === CARD UPLOAD KE-3: File Excel Rekap Guru (Sheet ABSENSI GURU) === */}
+            <div className="border-2 border-dashed border-violet-300 rounded-xl p-6 relative">
+              <label className="cursor-pointer block">
+                <div className="flex flex-col items-center gap-3">
+                  <Upload className="text-violet-600" size={40} />
+                  <span className="text-lg font-semibold text-gray-700">
+                    Rekap Absensi Guru
+                  </span>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    Upload file Excel Rekap Guru (sheet ke-2:{' '}
+                    <strong className="text-violet-700">ABSENSI GURU</strong>).
+                    Data kolom: Nama, Mapel, S, I, A, Tgs,{' '}
+                    <strong>JJM (Beban Jam/Minggu)</strong>.
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) =>
+                    e.target.files &&
+                    e.target.files[0] &&
+                    processGuruAbsensiFile(e.target.files[0])
+                  }
+                  className="hidden"
+                />
+              </label>
+              {isLoadingGuruAbsensi && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
+                  <Loader className="animate-spin text-violet-600" size={40} />
+                </div>
+              )}
+              {guruAbsensiData.length > 0 && (
+                <div className="mt-4 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+                  <p className="text-violet-800 font-medium text-sm">
+                    ✅ {guruAbsensiData.length} guru dimuat
+                  </p>
+                  <p className="text-violet-600 text-xs mt-1">
+                    Tanpa ketidakhadiran:{' '}
+                    <strong>
+                      {guruAbsensiData.filter(g => g.totalKetidakhadiran === 0).length} guru
+                    </strong>
                   </p>
                 </div>
               )}
@@ -4702,9 +4997,74 @@ const AttendanceRecapSystem = () => {
                       </table>
                     </div>
                   </div>
-                </div>
+
+                  {/* === TABEL 4: Guru Tanpa Ketidakhadiran (dari ABSENSI GURU) === */}
+                  {rankingData.guruRanking ? (
+                    <div className="bg-white rounded-lg p-5 shadow-md">
+                      <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
+                        <span className="bg-violet-500 text-white px-3 py-1 rounded-full text-sm">
+                          4
+                        </span>
+                        Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)
+                      </h4>
+                      {rankingData.guruRanking.guruTanpaKetidakhadiran.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm bg-white rounded-lg">
+                            <thead className="bg-violet-600 text-white">
+                              <tr>
+                                <th className="px-3 py-2 text-center w-20">Peringkat</th>
+                                <th className="px-3 py-2 text-left w-64">Nama</th>
+                                <th className="px-3 py-2 text-left w-48">Mapel</th>
+                                <th className="px-3 py-2 text-center w-28">JJM</th>
+                                <th className="px-3 py-2 text-center w-12">S</th>
+                                <th className="px-3 py-2 text-center w-12">I</th>
+                                <th className="px-3 py-2 text-center w-12">A</th>
+                                <th className="px-3 py-2 text-center w-28">Persentase</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rankingData.guruRanking.guruTanpaKetidakhadiran.slice(0, 10).map((guru, idx) => (
+                                <tr
+                                  key={idx}
+                                  className={idx % 2 === 0 ? 'bg-violet-50' : 'bg-white'}
+                                >
+                                  <td className="px-3 py-2 text-center font-bold text-violet-700">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-800">{guru.nama}</td>
+                                  <td className="px-3 py-2 text-gray-600 text-sm">{guru.mapel}</td>
+                                  <td className="px-3 py-2 text-center font-bold text-violet-600">
+                                    {guru.jjm}
+                                  </td>
+                                  <td className="px-3 py-2 text-center text-gray-700">{guru.totalS}</td>
+                                  <td className="px-3 py-2 text-center text-gray-700">{guru.totalI}</td>
+                                  <td className="px-3 py-2 text-center text-gray-700">{guru.totalA}</td>
+                                  <td className="px-3 py-2 text-center font-bold text-violet-600">100%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-violet-600 text-sm italic text-center py-4">
+                          Semua guru tercatat memiliki ketidakhadiran pada periode ini.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-violet-50 border-2 border-dashed border-violet-300 rounded-lg p-6 text-center">
+                      <p className="text-violet-500 font-medium text-sm">
+                        Upload <strong>File Excel Rekap Guru</strong> (card ke-3 di atas) untuk melihat
+                      </p>
+                      <p className="text-violet-400 text-xs mt-1">
+                        Peringkat Guru Tanpa Ketidakhadiran berdasarkan JJM
+                      </p>
+                    </div>
+                  )}
+
               </div>
-            )}
+            </div>
+          )}
             {activeRecapTab === 'guide' && (
               <div
                 ref={panduanRef}
