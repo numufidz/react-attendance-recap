@@ -1065,8 +1065,10 @@ const AttendanceRecapSystem = () => {
         let jumlahColTgs = -1;
         let jjmCol = -1;
         let dataStartRow = 7; // Default: baris ke-8 (index 7)
+        let jumlahHeaderFoundAt = -1; // Posisi merged-cell header 'JUMLAH'
+        let subHeaderRowIdx = -1;     // Baris sub-header S,I,A,Tgs berulang
 
-        // Scan baris header (baris 1-10)
+        // Scan baris header (baris 1-12)
         for (let i = 0; i < Math.min(12, jsonData.length); i++) {
           const row = jsonData[i];
           const rowStr = row.map(c => String(c || '').toLowerCase()).join('|');
@@ -1081,25 +1083,74 @@ const AttendanceRecapSystem = () => {
             });
           }
 
-          // Cari kolom JUMLAH (cari kata 'JUMLAH')
+          // Cari kata JUMLAH sebagai penanda section jumlah (merged cell)
+          // Jangan langsung ambil idx+1 — sub-kolom S,I,A ada di baris sub-header
           row.forEach((cell, idx) => {
             const cellStr = String(cell || '').toUpperCase().trim();
-            if (cellStr === 'JUMLAH') {
-              // Biasanya S,I,A,Tgs,TOTAL ada setelah JUMLAH
-              jumlahColS = idx + 1;
-              jumlahColI = idx + 2;
-              jumlahColA = idx + 3;
-              jumlahColTgs = idx + 4;
+            if (cellStr === 'JUMLAH' && idx > 10) {
+              jumlahHeaderFoundAt = idx;
             }
           });
 
           // Cari kolom BEBAN JAM / JJM
           row.forEach((cell, idx) => {
             const cellStr = String(cell || '').toUpperCase().trim();
-            if (cellStr.includes('BEBAN') || cellStr === 'JJM' || cellStr.includes('MINGGU')) {
+            if (cellStr.includes('BEBAN') || cellStr === 'JJM' ||
+                (cellStr.includes('JAM') && cellStr.includes('MINGGU'))) {
               jjmCol = idx;
             }
           });
+
+          // Detect sub-header row: baris yang punya S dan I berulang >= 3 kali
+          // (baris ini memuat sub-kolom: S, I, A, Tgs, TOT per minggu + JUMLAH section)
+          const sCells = row.filter(c => String(c || '').trim().toUpperCase() === 'S').length;
+          const iCells = row.filter(c => String(c || '').trim().toUpperCase() === 'I').length;
+          if (sCells >= 3 && iCells >= 3) {
+            subHeaderRowIdx = i;
+          }
+        }
+
+        // Tentukan kolom S,I,A,Tgs dari sub-header row, mulai scan dari posisi JUMLAH
+        if (subHeaderRowIdx >= 0) {
+          const subRow = jsonData[subHeaderRowIdx];
+          // Mulai dari posisi jumlahHeaderFoundAt (atau 0 jika belum ditemukan)
+          const startCol = jumlahHeaderFoundAt >= 0 ? jumlahHeaderFoundAt : 0;
+          // Reset dulu — ambil posisi TERAKHIR S,I,A,Tgs di section JUMLAH
+          let lastS = -1, lastI = -1, lastA = -1, lastTgs = -1;
+          for (let j = startCol; j < subRow.length; j++) {
+            const cell = String(subRow[j] || '').trim().toUpperCase();
+            if (cell === 'S') lastS = j;
+            if (cell === 'I') lastI = j;
+            if (cell === 'A') lastA = j;
+            if (cell === 'TGS' || cell === 'T') lastTgs = j;
+            // Berhenti jika sudah masuk ke area JJM/BEBAN
+            if (cell.includes('BEBAN') || cell === 'JJM') break;
+          }
+          // Hanya pakai jika S,I,A berhasil ditemukan
+          if (lastS >= 0 && lastI >= 0 && lastA >= 0) {
+            jumlahColS = lastS;
+            jumlahColI = lastI;
+            jumlahColA = lastA;
+            if (lastTgs >= 0) jumlahColTgs = lastTgs;
+          }
+        }
+
+        // Fallback 1: Jika sub-header scan gagal, pakai posisi JUMLAH header langsung
+        // S tepat di jumlahHeaderFoundAt (bukan +1), karena merged cell mencakup kolom S
+        if (jumlahColS < 0 && jumlahHeaderFoundAt >= 0) {
+          jumlahColS = jumlahHeaderFoundAt;
+          jumlahColI = jumlahHeaderFoundAt + 1;
+          jumlahColA = jumlahHeaderFoundAt + 2;
+          jumlahColTgs = jumlahHeaderFoundAt + 3;
+        }
+
+        // Fallback 2: Gunakan posisi JJM — struktur: S, I, A, Tgs, TOTAL, JJM
+        // Ada kolom TOTAL di antara Tgs dan JJM, sehingga offset -5,-4,-3,-2
+        if (jumlahColS < 0 && jjmCol > 0) {
+          jumlahColS = jjmCol - 5;
+          jumlahColI = jjmCol - 4;
+          jumlahColA = jjmCol - 3;
+          jumlahColTgs = jjmCol - 2;
         }
 
         // Temukan baris data pertama (No harus angka)
@@ -1126,18 +1177,13 @@ const AttendanceRecapSystem = () => {
           }
         }
 
-        // Pure fallback berdasarkan screenshot struktur:
-        // T=19(S), U=20(I), V=21(A), W=22(Tgs), X=23(TOTAL), AH=33(JJM) [0-indexed]
+        // Hard fallback berdasarkan struktur Excel REKAP ABSENSI DEWAN GURU MTs An-Nur
+        // Struktur: S=T(19), I=U(20), A=V(21), Tgs=W(22), TOTAL=X(23), JJM=AI(34) [0-indexed]
         if (jumlahColS < 0) {
-          if (jjmCol > 0) {
-            jumlahColTgs = jjmCol - 1;
-            jumlahColA = jjmCol - 2;
-            jumlahColI = jjmCol - 3;
-            jumlahColS = jjmCol - 4;
-          } else {
-            jumlahColS = 19; jumlahColI = 20; jumlahColA = 21; jumlahColTgs = 22;
-            jjmCol = 33;
-          }
+          jumlahColS = 19; jumlahColI = 20; jumlahColA = 21; jumlahColTgs = 22;
+        }
+        if (jjmCol < 0) {
+          jjmCol = 34;
         }
 
         console.log('📋 Struktur kolom:', { namaCol, mapelCol, jumlahColS, jumlahColI, jumlahColA, jumlahColTgs, jjmCol, dataStartRow });
@@ -1196,7 +1242,11 @@ const AttendanceRecapSystem = () => {
     const guruDenganKetidakhadiran = guruList
       .filter(g => g.totalKetidakhadiran > 0)
       .sort((a, b) => a.totalKetidakhadiran - b.totalKetidakhadiran || b.jjm - a.jjm);
-    return { guruTanpaKetidakhadiran, guruDenganKetidakhadiran };
+    // Guru Dengan Ketidakhadiran Tertinggi: sort by totalKetidakhadiran desc (terbanyak dulu), lalu JJM desc
+    const guruKetidakhadiranTertinggi = guruList
+      .filter(g => g.totalKetidakhadiran > 0)
+      .sort((a, b) => b.totalKetidakhadiran - a.totalKetidakhadiran || b.jjm - a.jjm);
+    return { guruTanpaKetidakhadiran, guruDenganKetidakhadiran, guruKetidakhadiranTertinggi };
   };
 
   const getDateLabel = (date) => {
@@ -2630,118 +2680,207 @@ const AttendanceRecapSystem = () => {
         doc.text(note2, startX[0], yPos);
       }
 
-      // ============= HALAMAN 3: TABEL 4 - GURU TANPA KETIDAKHADIRAN =============
-      if (rankingData?.guruRanking?.guruTanpaKetidakhadiran?.length > 0) {
+      // ============= HALAMAN 4: PERINGKAT GURU (2 KOLOM - MANUAL ROW STYLE) =============
+      if (rankingData?.guruRanking) {
         doc.addPage();
-        let yPos4 = 40;
 
-        // Header — PERSIS sama dengan halaman PERINGKAT GURU & KARYAWAN
-        doc.setFillColor(109, 40, 217); // Violet (sama konsepnya dengan indigo di halaman peringkat)
+        // ---- Header halaman ----
+        doc.setFillColor(109, 40, 217);
         doc.rect(0, 0, pageWidth, 60, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
+        doc.setFontSize(20);
         doc.setFont(undefined, 'bold');
-        doc.text('PERINGKAT GURU TANPA KETIDAKHADIRAN', 40, 25);
-        doc.setFontSize(14);
+        doc.text('PERINGKAT KEHADIRAN GURU SESUAI JJM', 40, 25);
+        doc.setFontSize(13);
         doc.setFont(undefined, 'bold');
         doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
         doc.text(`Periode: ${summaryData.periode}`, 40, 55);
 
-        yPos4 = 80;
+        // ---- Layout 2 Kolom ----
+        const gap4    = 14;
+        const col4W   = (pageWidth - 80 - gap4) / 2;
+        const leftX4  = 40;
+        const rightX4 = leftX4 + col4W + gap4;
+        const rowH4   = 28;
+        let yH4       = 75;
 
-        // Lebar kolom penuh (1 kolom saja, berbeda dari 3 kolom di halaman peringkat)
-        const tabel4Width = pageWidth - 80;
-        const tabel4X = 40;
+        // Data
+        const guruBersih  = rankingData.guruRanking.guruTanpaKetidakhadiran
+          ? rankingData.guruRanking.guruTanpaKetidakhadiran.slice(0, 10) : [];
+        const guruKetidak = rankingData.guruRanking.guruKetidakhadiranTertinggi
+          ? rankingData.guruRanking.guruKetidakhadiranTertinggi.slice(0, 10) : [];
 
-        // Header pill — sama style dengan pill hijau/biru/merah di halaman peringkat
+        // ===== HEADER KOLOM KIRI =====
+        doc.setFillColor(109, 40, 217);
+        doc.roundedRect(leftX4, yH4, col4W, 24, 4, 4, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFillColor(109, 40, 217); // Violet
-        doc.roundedRect(tabel4X, yPos4, tabel4Width, 25, 5, 5, 'F');
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)', tabel4X + 10, yPos4 + 17);
-
-        yPos4 += 50;
-
-        // Data rows — PERSIS sama struktur dengan halaman peringkat
-        const top10Guru = rankingData.guruRanking.guruTanpaKetidakhadiran.slice(0, 10);
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(8);
-        const rowHeight4 = 30;
-        // Lebar kolom untuk nilai di kanan (JJM, S, I, A, %)
-        const valColW = 30;
-        const pctColW = 40;
-        const nameColW = tabel4Width - 24 - 110 - (valColW * 3) - pctColW; // sisanya untuk nama
-
-        for (let i = 0; i < top10Guru.length; i++) {
-          const guru = top10Guru[i];
-          // Background alternating — sama persis dengan halaman peringkat
-          doc.setFillColor(i % 2 === 0 ? 237 : 255, i % 2 === 0 ? 233 : 255, i % 2 === 0 ? 254 : 255);
-          doc.rect(tabel4X, yPos4, tabel4Width, rowHeight4, 'F');
-
-          // Nomor urut — bold violet, sama seperti halaman peringkat
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.setTextColor(109, 40, 217);
-          doc.text(`${i + 1}.`, tabel4X + 5, yPos4 + 17);
-
-          // Nama guru
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(9);
-          doc.setTextColor(0, 0, 0);
-          const maxNameLen = Math.floor(nameColW / 6);
-          const displayNama = guru.nama.length > maxNameLen
-            ? guru.nama.substring(0, maxNameLen - 3) + '...'
-            : guru.nama;
-          doc.text(displayNama, tabel4X + 24, yPos4 + 12);
-
-          // Jabatan (dari field mapel) — kecil abu-abu, sama seperti jabatan di halaman peringkat
-          doc.setFontSize(7.5);
-          doc.setTextColor(100, 100, 100);
-          const maxMapelLen = Math.floor((nameColW + 80) / 5.5);
-          const displayJabatan = guru.mapel.length > maxMapelLen
-            ? guru.mapel.substring(0, maxMapelLen - 3) + '...'
-            : guru.mapel;
-          doc.text(displayJabatan, tabel4X + 24, yPos4 + 21);
-
-          // JJM — label kecil + nilai bold violet
-          const jjmX = tabel4X + tabel4Width - pctColW - (valColW * 3) - 50;
-          doc.setTextColor(80, 80, 80);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
-          doc.text('JJM', jjmX - 20, yPos4 + 12);
-          doc.setTextColor(109, 40, 217);
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(10);
-          doc.text(`${guru.jjm}`, jjmX, yPos4 + 17);
-
-          // S: 0  I: 0  A: 0 — dalam satu baris, rata tengah vertikal
-          const siaX = tabel4X + tabel4Width - pctColW - (valColW * 3) + 5;
-          doc.setTextColor(80, 80, 80);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
-          doc.text(`S:${guru.totalS}  I:${guru.totalI}  A:${guru.totalA}`, siaX, yPos4 + 17);
-
-          // Persentase — bold hitam
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(11);
-          doc.setFont(undefined, 'bold');
-          doc.text('100%', tabel4X + tabel4Width - pctColW + 5, yPos4 + 17);
-
-          yPos4 += rowHeight4;
-        }
-
-
-        // Keterangan — PERSIS sama format dengan halaman peringkat
-        yPos4 += 10;
+        doc.text('Peringkat Guru Tanpa Ketidakhadiran', leftX4 + col4W / 2, yH4 + 10, { align: 'center' });
         doc.setFontSize(7);
         doc.setFont(undefined, 'italic');
+        doc.text('(S/I/A = 0, diurutkan JJM terbanyak)', leftX4 + col4W / 2, yH4 + 19, { align: 'center' });
+
+        // ===== HEADER KOLOM KANAN =====
+        doc.setFillColor(220, 38, 38);
+        doc.roundedRect(rightX4, yH4, col4W, 24, 4, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('Peringkat Guru Ketidakhadiran Tertinggi', rightX4 + col4W / 2, yH4 + 10, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'italic');
+        doc.text('(S/I/A > 0, diurutkan total terbanyak)', rightX4 + col4W / 2, yH4 + 19, { align: 'center' });
+
+        let yRow4 = yH4 + 30;
+
+        // --- Lebar area kanan (JJM + S/I/A + nilai) ---
+        const rightAreaW4  = 148; // px untuk area kanan dalam kolom
+        const namAreaW4    = col4W - rightAreaW4 - 10; // sisa untuk nama+mapel
+
+        // Posisi sub-kolom di dalam area kanan (relatif dari kiri kolom)
+        const jjmLabelOff4 = namAreaW4 + 4;
+        const jjmValOff4   = namAreaW4 + 24;
+        const sOff4        = namAreaW4 + 48;
+        const iOff4        = namAreaW4 + 68;
+        const aOff4        = namAreaW4 + 88;
+        const nilaiOff4    = namAreaW4 + 108;
+
+        const maxNamaCh4   = Math.floor(namAreaW4 / 5.2);
+
+        // ===== RENDER BARIS (10 baris) =====
+        const maxRows4 = 10;
+        for (let i = 0; i < maxRows4; i++) {
+          const gL = guruBersih[i];
+          const gR = guruKetidak[i];
+
+          // --- KIRI ---
+          if (gL) {
+            const bg = i % 2 === 0 ? [245, 243, 255] : [255, 255, 255];
+            doc.setFillColor(...bg);
+            doc.rect(leftX4, yRow4, col4W, rowH4, 'F');
+
+            // Nomor
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(109, 40, 217);
+            doc.text(`${i + 1}.`, leftX4 + 5, yRow4 + rowH4 / 2 + 3);
+
+            // Nama + Mapel
+            const rawNamaL = gL.nama || '';
+            const dispNamaL = rawNamaL.length > maxNamaCh4 ? rawNamaL.substring(0, maxNamaCh4 - 2) + '..' : rawNamaL;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 30, 30);
+            doc.text(dispNamaL, leftX4 + 20, yRow4 + 11);
+            const rawMapelL = gL.mapel || '';
+            const dispMapelL = rawMapelL.length > maxNamaCh4 ? rawMapelL.substring(0, maxNamaCh4 - 2) + '..' : rawMapelL;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 100, 100);
+            doc.text(dispMapelL, leftX4 + 20, yRow4 + 20);
+
+            // JJM label
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text('JJM', leftX4 + jjmLabelOff4, yRow4 + 10);
+            // JJM nilai
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(109, 40, 217);
+            doc.text(`${gL.jjm}`, leftX4 + jjmValOff4, yRow4 + rowH4 / 2 + 3);
+
+            // S / I / A
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`S:${gL.totalS}`, leftX4 + sOff4, yRow4 + rowH4 / 2 + 3);
+            doc.text(`I:${gL.totalI}`, leftX4 + iOff4, yRow4 + rowH4 / 2 + 3);
+            doc.text(`A:${gL.totalA}`, leftX4 + aOff4, yRow4 + rowH4 / 2 + 3);
+
+            // Nilai (100%)
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(22, 163, 74);
+            doc.text('100%', leftX4 + nilaiOff4, yRow4 + rowH4 / 2 + 3);
+
+            // Garis bawah baris
+            doc.setDrawColor(220, 215, 240);
+            doc.setLineWidth(0.3);
+            doc.line(leftX4, yRow4 + rowH4, leftX4 + col4W, yRow4 + rowH4);
+          }
+
+          // --- KANAN ---
+          if (gR) {
+            const bg = i % 2 === 0 ? [254, 242, 242] : [255, 255, 255];
+            doc.setFillColor(...bg);
+            doc.rect(rightX4, yRow4, col4W, rowH4, 'F');
+
+            // Nomor
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${i + 1}.`, rightX4 + 5, yRow4 + rowH4 / 2 + 3);
+
+            // Nama + Mapel
+            const rawNamaR = gR.nama || '';
+            const dispNamaR = rawNamaR.length > maxNamaCh4 ? rawNamaR.substring(0, maxNamaCh4 - 2) + '..' : rawNamaR;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 30, 30);
+            doc.text(dispNamaR, rightX4 + 20, yRow4 + 11);
+            const rawMapelR = gR.mapel || '';
+            const dispMapelR = rawMapelR.length > maxNamaCh4 ? rawMapelR.substring(0, maxNamaCh4 - 2) + '..' : rawMapelR;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 100, 100);
+            doc.text(dispMapelR, rightX4 + 20, yRow4 + 20);
+
+            // JJM label
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text('JJM', rightX4 + jjmLabelOff4, yRow4 + 10);
+            // JJM nilai
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`${gR.jjm}`, rightX4 + jjmValOff4, yRow4 + rowH4 / 2 + 3);
+
+            // S / I / A
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`S:${gR.totalS}`, rightX4 + sOff4, yRow4 + rowH4 / 2 + 3);
+            doc.text(`I:${gR.totalI}`, rightX4 + iOff4, yRow4 + rowH4 / 2 + 3);
+            doc.text(`A:${gR.totalA}`, rightX4 + aOff4, yRow4 + rowH4 / 2 + 3);
+
+            // Nilai total ketidakhadiran
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${gR.totalKetidakhadiran}x`, rightX4 + nilaiOff4, yRow4 + rowH4 / 2 + 3);
+
+            // Garis bawah baris
+            doc.setDrawColor(255, 215, 215);
+            doc.setLineWidth(0.3);
+            doc.line(rightX4, yRow4 + rowH4, rightX4 + col4W, yRow4 + rowH4);
+          }
+
+          yRow4 += rowH4;
+        }
+
+        // Keterangan
+        const yNote4 = yRow4 + 8;
+        doc.setFontSize(5.5);
+        doc.setFont(undefined, 'italic');
         doc.setTextColor(100, 100, 100);
-        doc.text('Keterangan: JJM = Jumlah Jam Mengajar | S = Sakit | I = Izin | A = Alfa | % = Persentase Kehadiran', tabel4X, yPos4);
-        yPos4 += 10;
-        doc.text('Peringkat 1 = Guru tanpa ketidakhadiran (S/I/A = 0) dengan JJM terbanyak. Semua guru di daftar ini memiliki kehadiran 100%.', tabel4X, yPos4);
+        doc.text('Ket: JJM = Jumlah Jam Mengajar | S = Sakit | I = Izin | A = Alfa', leftX4, yNote4);
+        doc.text('No.1 = guru tanpa ketidakhadiran (S/I/A=0) dengan JJM terbanyak. Kehadiran 100%.', leftX4, yNote4 + 7);
+        doc.text('No.1 = guru dengan total ketidakhadiran (S+I+A) terbanyak.', rightX4, yNote4);
       }
 
       // ============= HALAMAN 4-6: TABEL 1, 2, 3 =============
@@ -3848,76 +3987,194 @@ const AttendanceRecapSystem = () => {
 
       yPos = doc.lastAutoTable.finalY + 15;
 
-      // Cek halaman baru sebelum tabel 4
-      if (yPos > 680) {
+      // ===== HALAMAN BARU: PERINGKAT GURU (2 KOLOM - MANUAL ROW STYLE) =====
+      if (rankingData?.guruRanking) {
         doc.addPage();
-        yPos = 40;
-      }
 
-      // ===== TABEL 4: Guru Tanpa Ketidakhadiran (dari guruAbsensiData) =====
-      if (rankingData.guruRanking && rankingData.guruRanking.guruTanpaKetidakhadiran) {
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.setFillColor(139, 92, 246); // Ungu
-        doc.roundedRect(40, yPos, pageWidth - 80, 25, 5, 5, 'F');
+        // ---- Header halaman ----
+        doc.setFillColor(109, 40, 217);
+        doc.rect(0, 0, pageWidth, 60, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.text(
-          '4. 🎓 Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)',
-          60,
-          yPos + 17
-        );
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text('PERINGKAT KEHADIRAN GURU SESUAI JJM', 40, 25);
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.text(licenseInfo?.schoolName || 'SEKOLAH', 40, 40);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Periode: ${summaryData.periode}`, 40, 55);
 
-        yPos += 35;
+        // ---- Layout 2 Kolom ----
+        const gap4s    = 14;
+        const col4Ws   = (pageWidth - 80 - gap4s) / 2;
+        const leftX4s  = 40;
+        const rightX4s = leftX4s + col4Ws + gap4s;
+        const rowH4s   = 28;
+        let yH4s       = 75;
 
-        const table4Data = rankingData.guruRanking.guruTanpaKetidakhadiran.map((guru, idx) => [
-          idx + 1,
-          guru.nama,
-          guru.mapel,
-          guru.jjm,
-          guru.totalS,
-          guru.totalI,
-          guru.totalA,
-          guru.totalKetidakhadiran,
-        ]);
+        // Data
+        const guruBersih2  = rankingData.guruRanking.guruTanpaKetidakhadiran
+          ? rankingData.guruRanking.guruTanpaKetidakhadiran.slice(0, 10) : [];
+        const guruKetidak2 = rankingData.guruRanking.guruKetidakhadiranTertinggi
+          ? rankingData.guruRanking.guruKetidakhadiranTertinggi.slice(0, 10) : [];
 
-        autoTable(doc, {
-          head: [['Rank', 'Nama Guru', 'Mapel', 'JJM', 'S', 'I', 'A', 'Total Tidak Hadir']],
-          body: table4Data,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: {
-            fillColor: [139, 92, 246],
-            fontStyle: 'bold',
-            fontSize: 8,
-          },
-          styles: { fontSize: 7, cellPadding: 2.5 },
-          columnStyles: {
-            0: { halign: 'center', cellWidth: 20 },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 'auto' },
-            3: { halign: 'center', cellWidth: 25 },
-            4: { halign: 'center', cellWidth: 20 },
-            5: { halign: 'center', cellWidth: 20 },
-            6: { halign: 'center', cellWidth: 20 },
-            7: { halign: 'center', cellWidth: 35 },
-          },
-          didDrawRow: (data) => {
-            // Highlight top 3
-            if (data.row.index === 0) {
-              data.row.cells[0].styles = { ...data.row.cells[0].styles, fillColor: [255, 215, 0], textColor: [0,0,0] };
-            }
-          }
-        });
-
-        yPos = doc.lastAutoTable.finalY + 5;
+        // ===== HEADER KOLOM KIRI =====
+        doc.setFillColor(109, 40, 217);
+        doc.roundedRect(leftX4s, yH4s, col4Ws, 24, 4, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('Peringkat Guru Tanpa Ketidakhadiran', leftX4s + col4Ws / 2, yH4s + 10, { align: 'center' });
         doc.setFontSize(7);
         doc.setFont(undefined, 'italic');
+        doc.text('(S/I/A = 0, diurutkan JJM terbanyak)', leftX4s + col4Ws / 2, yH4s + 19, { align: 'center' });
+
+        // ===== HEADER KOLOM KANAN =====
+        doc.setFillColor(220, 38, 38);
+        doc.roundedRect(rightX4s, yH4s, col4Ws, 24, 4, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('Peringkat Guru Ketidakhadiran Tertinggi', rightX4s + col4Ws / 2, yH4s + 10, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'italic');
+        doc.text('(S/I/A > 0, diurutkan total terbanyak)', rightX4s + col4Ws / 2, yH4s + 19, { align: 'center' });
+
+        let yRow4s = yH4s + 30;
+
+        // --- Lebar area kanan (JJM + S/I/A + nilai) ---
+        const rightAreaW4s = 148;
+        const namAreaW4s   = col4Ws - rightAreaW4s - 10;
+
+        const jjmLabelOff4s = namAreaW4s + 4;
+        const jjmValOff4s   = namAreaW4s + 24;
+        const sOff4s        = namAreaW4s + 48;
+        const iOff4s        = namAreaW4s + 68;
+        const aOff4s        = namAreaW4s + 88;
+        const nilaiOff4s    = namAreaW4s + 108;
+
+        const maxNamaCh4s   = Math.floor(namAreaW4s / 5.2);
+
+        const maxRows4s = 10;
+        for (let i = 0; i < maxRows4s; i++) {
+          const gL = guruBersih2[i];
+          const gR = guruKetidak2[i];
+
+          // --- KIRI ---
+          if (gL) {
+            const bg = i % 2 === 0 ? [245, 243, 255] : [255, 255, 255];
+            doc.setFillColor(...bg);
+            doc.rect(leftX4s, yRow4s, col4Ws, rowH4s, 'F');
+
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(109, 40, 217);
+            doc.text(`${i + 1}.`, leftX4s + 5, yRow4s + rowH4s / 2 + 3);
+
+            const rawNamaL = gL.nama || '';
+            const dispNamaL = rawNamaL.length > maxNamaCh4s ? rawNamaL.substring(0, maxNamaCh4s - 2) + '..' : rawNamaL;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 30, 30);
+            doc.text(dispNamaL, leftX4s + 20, yRow4s + 11);
+            const rawMapelL = gL.mapel || '';
+            const dispMapelL = rawMapelL.length > maxNamaCh4s ? rawMapelL.substring(0, maxNamaCh4s - 2) + '..' : rawMapelL;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 100, 100);
+            doc.text(dispMapelL, leftX4s + 20, yRow4s + 20);
+
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text('JJM', leftX4s + jjmLabelOff4s, yRow4s + 10);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(109, 40, 217);
+            doc.text(`${gL.jjm}`, leftX4s + jjmValOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`S:${gL.totalS}`, leftX4s + sOff4s, yRow4s + rowH4s / 2 + 3);
+            doc.text(`I:${gL.totalI}`, leftX4s + iOff4s, yRow4s + rowH4s / 2 + 3);
+            doc.text(`A:${gL.totalA}`, leftX4s + aOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(22, 163, 74);
+            doc.text('100%', leftX4s + nilaiOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setDrawColor(220, 215, 240);
+            doc.setLineWidth(0.3);
+            doc.line(leftX4s, yRow4s + rowH4s, leftX4s + col4Ws, yRow4s + rowH4s);
+          }
+
+          // --- KANAN ---
+          if (gR) {
+            const bg = i % 2 === 0 ? [254, 242, 242] : [255, 255, 255];
+            doc.setFillColor(...bg);
+            doc.rect(rightX4s, yRow4s, col4Ws, rowH4s, 'F');
+
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${i + 1}.`, rightX4s + 5, yRow4s + rowH4s / 2 + 3);
+
+            const rawNamaR = gR.nama || '';
+            const dispNamaR = rawNamaR.length > maxNamaCh4s ? rawNamaR.substring(0, maxNamaCh4s - 2) + '..' : rawNamaR;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 30, 30);
+            doc.text(dispNamaR, rightX4s + 20, yRow4s + 11);
+            const rawMapelR = gR.mapel || '';
+            const dispMapelR = rawMapelR.length > maxNamaCh4s ? rawMapelR.substring(0, maxNamaCh4s - 2) + '..' : rawMapelR;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 100, 100);
+            doc.text(dispMapelR, rightX4s + 20, yRow4s + 20);
+
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text('JJM', rightX4s + jjmLabelOff4s, yRow4s + 10);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`${gR.jjm}`, rightX4s + jjmValOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`S:${gR.totalS}`, rightX4s + sOff4s, yRow4s + rowH4s / 2 + 3);
+            doc.text(`I:${gR.totalI}`, rightX4s + iOff4s, yRow4s + rowH4s / 2 + 3);
+            doc.text(`A:${gR.totalA}`, rightX4s + aOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${gR.totalKetidakhadiran}x`, rightX4s + nilaiOff4s, yRow4s + rowH4s / 2 + 3);
+
+            doc.setDrawColor(255, 215, 215);
+            doc.setLineWidth(0.3);
+            doc.line(rightX4s, yRow4s + rowH4s, rightX4s + col4Ws, yRow4s + rowH4s);
+          }
+
+          yRow4s += rowH4s;
+        }
+
+        const yNote4s = yRow4s + 8;
+        doc.setFontSize(5.5);
+        doc.setFont(undefined, 'italic');
         doc.setTextColor(100, 100, 100);
-        doc.text('Peringkat 1 = Guru tanpa ketidakhadiran (S/I/A=0) dengan JJM terbanyak.', 40, yPos + 10);
+        doc.text('Ket: JJM = Jumlah Jam Mengajar | S = Sakit | I = Izin | A = Alfa', leftX4s, yNote4s);
+        doc.text('No.1 = guru tanpa ketidakhadiran (S/I/A=0) dengan JJM terbanyak. Kehadiran 100%.', leftX4s, yNote4s + 7);
+        doc.text('No.1 = guru dengan total ketidakhadiran (S+I+A) terbanyak.', rightX4s, yNote4s);
       }
     }
 
-    doc.save('kesimpulan_profil_absensi.pdf');
+        doc.save('kesimpulan_profil_absensi.pdf');
   };
   const downloadAllTablesAsExcel = () => {
     if (!recapData) {
@@ -5114,26 +5371,29 @@ const AttendanceRecapSystem = () => {
 
                   {/* === TABEL 4: Guru Tanpa Ketidakhadiran (dari ABSENSI GURU) === */}
                   {rankingData.guruRanking ? (
+                    <>
+                    {/* === TABEL 4: Guru Tanpa Ketidakhadiran === */}
                     <div className="bg-white rounded-lg p-5 shadow-md">
-                      <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
+                      <h4 className="font-bold text-gray-800 mb-1 flex items-center gap-2 text-lg">
                         <span className="bg-violet-500 text-white px-3 py-1 rounded-full text-sm">
                           4
                         </span>
                         Peringkat Guru Tanpa Ketidakhadiran (Berdasarkan JJM)
                       </h4>
+                      <p className="text-xs text-violet-500 italic mb-3">Guru dengan S/I/A = 0, diurutkan berdasarkan JJM terbanyak</p>
                       {rankingData.guruRanking.guruTanpaKetidakhadiran.length > 0 ? (
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm bg-white rounded-lg">
                             <thead className="bg-violet-600 text-white">
                               <tr>
-                                <th className="px-3 py-2 text-center w-20">Peringkat</th>
-                                <th className="px-3 py-2 text-left w-64">Nama</th>
-                                <th className="px-3 py-2 text-left w-48">Mapel</th>
+                                <th className="px-3 py-2 text-center w-20">No.</th>
+                                <th className="px-3 py-2 text-left w-64">Nama Guru</th>
+                                <th className="px-3 py-2 text-left w-48">Mata Pelajaran</th>
                                 <th className="px-3 py-2 text-center w-28">JJM</th>
                                 <th className="px-3 py-2 text-center w-12">S</th>
                                 <th className="px-3 py-2 text-center w-12">I</th>
                                 <th className="px-3 py-2 text-center w-12">A</th>
-                                <th className="px-3 py-2 text-center w-28">Persentase</th>
+                                <th className="px-3 py-2 text-center w-28">Kehadiran</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -5153,7 +5413,7 @@ const AttendanceRecapSystem = () => {
                                   <td className="px-3 py-2 text-center text-gray-700">{guru.totalS}</td>
                                   <td className="px-3 py-2 text-center text-gray-700">{guru.totalI}</td>
                                   <td className="px-3 py-2 text-center text-gray-700">{guru.totalA}</td>
-                                  <td className="px-3 py-2 text-center font-bold text-violet-600">100%</td>
+                                  <td className="px-3 py-2 text-center font-bold text-green-600">100%</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -5165,13 +5425,68 @@ const AttendanceRecapSystem = () => {
                         </p>
                       )}
                     </div>
+
+                    {/* === TABEL 5: Guru Dengan Ketidakhadiran Tertinggi === */}
+                    <div className="bg-white rounded-lg p-5 shadow-md">
+                      <h4 className="font-bold text-gray-800 mb-1 flex items-center gap-2 text-lg">
+                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                          5
+                        </span>
+                        Peringkat Guru Dengan Ketidakhadiran Tertinggi (Berdasarkan JJM)
+                      </h4>
+                      <p className="text-xs text-red-500 italic mb-3">Guru dengan S/I/A &gt; 0, diurutkan berdasarkan jumlah ketidakhadiran terbanyak</p>
+                      {rankingData.guruRanking.guruKetidakhadiranTertinggi && rankingData.guruRanking.guruKetidakhadiranTertinggi.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm bg-white rounded-lg">
+                            <thead className="bg-red-500 text-white">
+                              <tr>
+                                <th className="px-3 py-2 text-center w-20">No.</th>
+                                <th className="px-3 py-2 text-left w-64">Nama Guru</th>
+                                <th className="px-3 py-2 text-left w-48">Mata Pelajaran</th>
+                                <th className="px-3 py-2 text-center w-28">JJM</th>
+                                <th className="px-3 py-2 text-center w-12">S</th>
+                                <th className="px-3 py-2 text-center w-12">I</th>
+                                <th className="px-3 py-2 text-center w-12">A</th>
+                                <th className="px-3 py-2 text-center w-36">Total Tidak Hadir</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rankingData.guruRanking.guruKetidakhadiranTertinggi.slice(0, 10).map((guru, idx) => (
+                                <tr
+                                  key={idx}
+                                  className={idx % 2 === 0 ? 'bg-red-50' : 'bg-white'}
+                                >
+                                  <td className="px-3 py-2 text-center font-bold text-red-600">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-800">{guru.nama}</td>
+                                  <td className="px-3 py-2 text-gray-600 text-sm">{guru.mapel}</td>
+                                  <td className="px-3 py-2 text-center font-bold text-gray-700">
+                                    {guru.jjm}
+                                  </td>
+                                  <td className="px-3 py-2 text-center text-orange-600 font-semibold">{guru.totalS}</td>
+                                  <td className="px-3 py-2 text-center text-orange-600 font-semibold">{guru.totalI}</td>
+                                  <td className="px-3 py-2 text-center text-red-600 font-bold">{guru.totalA}</td>
+                                  <td className="px-3 py-2 text-center font-bold text-red-600">{guru.totalKetidakhadiran}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-red-500 text-sm italic text-center py-4">
+                          Tidak ada guru dengan ketidakhadiran pada periode ini.
+                        </p>
+                      )}
+                    </div>
+                    </>
                   ) : (
                     <div className="bg-violet-50 border-2 border-dashed border-violet-300 rounded-lg p-6 text-center">
                       <p className="text-violet-500 font-medium text-sm">
                         Upload <strong>File Excel Rekap Guru</strong> (card ke-3 di atas) untuk melihat
                       </p>
                       <p className="text-violet-400 text-xs mt-1">
-                        Peringkat Guru Tanpa Ketidakhadiran berdasarkan JJM
+                        Peringkat Guru Tanpa Ketidakhadiran &amp; Peringkat Guru Dengan Ketidakhadiran Tertinggi
                       </p>
                     </div>
                   )}
