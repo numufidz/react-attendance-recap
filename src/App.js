@@ -1530,18 +1530,27 @@ const AttendanceRecapSystem = () => {
           const hasIn = rec.in !== '-';
           const hasOut = rec.out !== '-';
 
-          // Hitung untuk Tabel 2: Kedisiplinan Waktu
+          // Hitung Disiplin Waktu & Tertib Administrasi (INDEPENDEN)
+          // Hijau (Disiplin Waktu) dan Biru (Tertib Administrasi) TIDAK saling mengecualikan:
+          // Seseorang bisa hijau+biru di hari yang sama jika datang tepat waktu DAN scan lengkap.
           if (!hasIn && !hasOut) {
+            // Tidak scan sama sekali → Merah (Alfa)
             merah++;
-          } else if (hasIn && hasOut) {
-            biru++;
-          } else if (hasIn) {
-            const dayName = getDayName(dateStr);
-            const schedStart = sched?.schedule[dayName]?.start;
-            const inMin = timeToMinutes(rec.in);
-            const schedMin = timeToMinutes(schedStart);
-            if (schedMin && inMin && inMin <= schedMin) {
-              hijau++;
+          } else {
+            // Biru: scan masuk DAN pulang lengkap → Tertib Administrasi
+            if (hasIn && hasOut) {
+              biru++;
+            }
+            // Hijau: scan masuk DAN datang tepat waktu → Disiplin Waktu
+            // (independen dari scan pulang — bisa hijau+biru di hari yang sama)
+            if (hasIn) {
+              const dayName = getDayName(dateStr);
+              const schedStart = sched?.schedule[dayName]?.start;
+              const inMin = timeToMinutes(rec.in);
+              const schedMin = timeToMinutes(schedStart);
+              if (schedMin && inMin && inMin <= schedMin) {
+                hijau++;
+              }
             }
           }
         }
@@ -5967,19 +5976,26 @@ const AttendanceRecapSystem = () => {
                                 const hasIn = rec.in !== '-';
                                 const hasOut = rec.out !== '-';
 
-                                if (hasIn && hasOut) {
-                                  biru++;
-                                  // Hitung durasi hanya untuk hari berwarna biru
-                                  const inMinutes = timeToMinutes(rec.in);
-                                  const outMinutes = timeToMinutes(rec.out);
-                                  if (inMinutes !== null && outMinutes !== null) {
-                                    let duration = outMinutes - inMinutes;
-                                    if (duration < 0) duration += 24 * 60; // Handle midnight crossing
-                                    totalMinutes += duration;
+                                if (!hasIn && !hasOut) {
+                                  // Tidak scan sama sekali → Merah
+                                  merah++;
+                                } else {
+                                  // Biru: scan masuk DAN pulang lengkap
+                                  if (hasIn && hasOut) {
+                                    biru++;
+                                    // Hitung durasi hanya untuk hari scan lengkap
+                                    const inMinutes = timeToMinutes(rec.in);
+                                    const outMinutes = timeToMinutes(rec.out);
+                                    if (inMinutes !== null && outMinutes !== null) {
+                                      let duration = outMinutes - inMinutes;
+                                      if (duration < 0) duration += 24 * 60;
+                                      totalMinutes += duration;
+                                    }
+                                  } else {
+                                    // Scan masuk saja atau pulang saja → Kuning
+                                    kuning++;
                                   }
                                 }
-                                else if (!hasIn && !hasOut) merah++;
-                                else kuning++;
                               }
                             });
 
@@ -6030,6 +6046,8 @@ const AttendanceRecapSystem = () => {
                                   }
                                   const hasIn = rec.in !== '-';
                                   const hasOut = rec.out !== '-';
+                                  // Warna sel Rekap Mesin: satu warna per hari
+                                  // Biru=scan lengkap, Merah=tidak scan, Kuning=tidak lengkap
                                   const bg =
                                     hasIn && hasOut
                                       ? 'bg-blue-200'
@@ -6192,22 +6210,28 @@ const AttendanceRecapSystem = () => {
                                 const hasOut = rec.out !== '-';
 
                                 if (!hasIn && !hasOut) {
+                                  // Tidak scan sama sekali → Merah
                                   merah++;
-                                } else if (hasIn && hasOut) {
-                                  biru++;
-                                } else if (hasIn) {
-                                  const dayName = getDayName(dateStr);
-                                  const schedStart =
-                                    sched?.schedule[dayName]?.start;
-                                  const inMin = timeToMinutes(rec.in);
-                                  const schedMin = timeToMinutes(schedStart);
-                                  if (schedMin && inMin && inMin <= schedMin) {
-                                    hijau++;
+                                } else {
+                                  // Biru: scan masuk DAN pulang lengkap → Tertib Administrasi
+                                  if (hasIn && hasOut) {
+                                    biru++;
                                   } else {
+                                    // Hanya scan masuk atau hanya scan pulang → Kuning
                                     kuning++;
                                   }
-                                } else {
-                                  kuning++;
+                                  // Hijau: scan masuk DAN datang tepat waktu → Disiplin Waktu
+                                  // INDEPENDEN dari biru — bisa hijau+biru di hari yang sama
+                                  if (hasIn) {
+                                    const dayName = getDayName(dateStr);
+                                    const schedStart =
+                                      sched?.schedule[dayName]?.start;
+                                    const inMin = timeToMinutes(rec.in);
+                                    const schedMin = timeToMinutes(schedStart);
+                                    if (schedMin && inMin && inMin <= schedMin) {
+                                      hijau++;
+                                    }
+                                  }
                                 }
                               }
                             });
@@ -6255,29 +6279,27 @@ const AttendanceRecapSystem = () => {
                                   }
                                   const hasIn = rec.in !== '-';
                                   const hasOut = rec.out !== '-';
-                                  let bg = 'bg-red-200';
-                                  if (hasIn && hasOut) {
-                                    bg = 'bg-blue-300';
-                                  } else if (hasIn) {
+                                  // Sel MASUK: hijau=tepat/awal, kuning=terlambat, merah=tidak scan
+                                  let inBg = 'bg-red-200';
+                                  if (hasIn) {
                                     const dayName = getDayName(date);
-                                    const schedStart =
-                                      sched?.schedule[dayName]?.start;
+                                    const schedStart = sched?.schedule[dayName]?.start;
                                     const inMin = timeToMinutes(rec.in);
                                     const schedMin = timeToMinutes(schedStart);
                                     if (schedMin && inMin && inMin <= schedMin) {
-                                      bg = 'bg-green-300';
+                                      inBg = 'bg-green-300'; // Tepat waktu / lebih awal → Hijau
                                     } else {
-                                      bg = 'bg-yellow-300';
+                                      inBg = 'bg-yellow-300'; // Terlambat atau tidak ada jadwal → Kuning
                                     }
-                                  } else if (hasOut) {
-                                    bg = 'bg-yellow-300';
                                   }
+                                  // Sel PULANG: biru=ada scan pulang, merah=tidak scan pulang
+                                  const outBg = hasOut ? 'bg-blue-300' : 'bg-red-200';
                                   return (
                                     <React.Fragment key={date}>
                                       <td
                                         className={
                                           'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                          bg
+                                          inBg
                                         }
                                       >
                                         {rec.in}
@@ -6285,7 +6307,7 @@ const AttendanceRecapSystem = () => {
                                       <td
                                         className={
                                           'border border-gray-400 px-1 py-1 text-center text-xs ' +
-                                          bg
+                                          outBg
                                         }
                                       >
                                         {rec.out}
