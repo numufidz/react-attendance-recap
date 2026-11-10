@@ -1337,7 +1337,11 @@ const AttendanceRecapSystem = () => {
 
     try {
       const dateRange = getDateRange();
-      const recap = attendanceData.map((emp, index) => {
+      // Hanya proses karyawan yang ada di file Jadwal Kerja
+      // Jika tidak ada di jadwal → diabaikan dari semua tampilan & perhitungan
+      const recap = attendanceData
+        .filter((emp) => scheduleData.some((s) => s.id === emp.id))
+        .map((emp, index) => {
         const schedRecord = scheduleData.find((s) => s.id === emp.id);
         const dailyRecords = {};
         const dailyEvaluation = {};
@@ -5168,6 +5172,104 @@ const AttendanceRecapSystem = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* ===== EVALUASI ABSENSI GURU (dari data piket) ===== */}
+                {guruAbsensiData && guruAbsensiData.length > 0 && (() => {
+                  // Hitung statistik dari data ABSENSI GURU
+                  const totalGuru = guruAbsensiData.length;
+                  const totalS = guruAbsensiData.reduce((a, g) => a + g.totalS, 0);
+                  const totalI = guruAbsensiData.reduce((a, g) => a + g.totalI, 0);
+                  const totalA = guruAbsensiData.reduce((a, g) => a + g.totalA, 0);
+                  const totalAbsen = totalS + totalI + totalA;
+                  const guruBersih = guruAbsensiData.filter(g => g.totalKetidakhadiran === 0).length;
+                  const guruAbsenArr = guruAbsensiData.filter(g => g.totalKetidakhadiran > 0);
+                  const rataAbsen = totalGuru > 0 ? (totalAbsen / totalGuru).toFixed(1) : 0;
+                  const pctBersih = totalGuru > 0 ? Math.round((guruBersih / totalGuru) * 100) : 0;
+                  // Dampak KBM: Σ(JJM × totalKetidakhadiran) — estimasi jam terdampak per minggu
+                  const totalJamTerdampak = guruAbsensiData.reduce((a, g) => a + (g.jjm > 0 ? g.totalKetidakhadiran * (g.jjm / 6) : 0), 0);
+                  const jamTerdampakBulat = Math.round(totalJamTerdampak);
+                  const pctS = totalAbsen > 0 ? Math.round((totalS / totalAbsen) * 100) : 0;
+                  const pctI = totalAbsen > 0 ? Math.round((totalI / totalAbsen) * 100) : 0;
+                  const pctA = totalAbsen > 0 ? Math.round((totalA / totalAbsen) * 100) : 0;
+                  return (
+                    <>
+                      {/* Blok 3: Ketidakhadiran Guru — style seragam dg blok 1 & 2 */}
+                      <div className="space-y-6 mb-8">
+                        <h3 className="text-xl font-bold text-indigo-800">3. Ketidakhadiran Guru (Absensi Piket)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Tanpa Ketidakhadiran</h4>
+                            <p className="text-sm text-gray-600">S/I/A = 0</p>
+                            <p className="text-3xl font-bold text-green-800 mt-2">{guruBersih} guru</p>
+                            <p className="text-xs text-gray-500 mt-1">{pctBersih}% dari {totalGuru} guru</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Ada Ketidakhadiran</h4>
+                            <p className="text-sm text-gray-600">S/I/A &gt; 0</p>
+                            <p className="text-3xl font-bold text-orange-700 mt-2">{guruAbsenArr.length} guru</p>
+                            <p className="text-xs text-gray-500 mt-1">Rata-rata {rataAbsen} hari absen/guru</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Total Tidak Hadir</h4>
+                            <p className="text-sm text-gray-600">Semua guru (S+I+A)</p>
+                            <p className="text-3xl font-bold text-red-700 mt-2">{totalAbsen} hari</p>
+                            <p className="text-xs text-gray-500 mt-1">S: {totalS} | I: {totalI} | A: {totalA}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Blok 4: Distribusi S/I/A — style seragam dg blok 1 & 2 */}
+                      <div className="space-y-6 mb-8">
+                        <h3 className="text-xl font-bold text-indigo-800">4. Distribusi Alasan Ketidakhadiran Guru</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Sakit (S)</h4>
+                            <p className="text-sm text-gray-600">Izin medis / tidak sehat</p>
+                            <p className="text-3xl font-bold text-yellow-700 mt-2">{totalS} hari</p>
+                            <p className="text-xs text-gray-500 mt-1">{pctS}% dari total absen</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Izin (I)</h4>
+                            <p className="text-sm text-gray-600">Keperluan resmi / ijin</p>
+                            <p className="text-3xl font-bold text-blue-700 mt-2">{totalI} hari</p>
+                            <p className="text-xs text-gray-500 mt-1">{pctI}% dari total absen</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Alfa (A)</h4>
+                            <p className="text-sm text-gray-600">Tidak hadir tanpa keterangan</p>
+                            <p className="text-3xl font-bold text-red-700 mt-2">{totalA} hari</p>
+                            <p className="text-xs text-gray-500 mt-1">{pctA}% dari total absen</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Blok 5: Dampak KBM — style seragam dg blok 1 & 2 */}
+                      <div className="space-y-6 mb-8">
+                        <h3 className="text-xl font-bold text-indigo-800">5. Estimasi Dampak terhadap KBM</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Total Jam Terdampak</h4>
+                            <p className="text-sm text-gray-600">Semua alasan (S+I+A)</p>
+                            <p className="text-3xl font-bold text-purple-700 mt-2">{jamTerdampakBulat} JP</p>
+                            <p className="text-xs text-gray-500 mt-1">Estimasi jam mengajar terdampak</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Dampak Alfa</h4>
+                            <p className="text-sm text-gray-600">Paling berdampak (tanpa keterangan)</p>
+                            <p className="text-3xl font-bold text-red-700 mt-2">{Math.round(guruAbsensiData.reduce((a,g) => a + (g.jjm > 0 ? g.totalA * (g.jjm/6) : 0), 0))} JP</p>
+                            <p className="text-xs text-gray-500 mt-1">{totalA} hari alfa × rata-rata JJM/6</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg shadow">
+                            <h4 className="font-bold text-lg mb-2 text-gray-800">Cara Hitung</h4>
+                            <p className="text-sm text-gray-600">Rumus estimasi</p>
+                            <p className="text-xs text-gray-500 mt-2">Σ(hari absen × JJM ÷ 6)</p>
+                            <p className="text-xs text-gray-400 mt-1">Pembagi 6 = hari masuk/minggu (Sabtu–Kamis)</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Rekomendasi */}
                 <div className="bg-white p-6 rounded-lg shadow">
